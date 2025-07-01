@@ -1,12 +1,45 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
   <component name="ChangeListManager">
-    <list default="true" id="7e79b749-a63e-4609-b1e0-2031ec674542" name="Changes" comment="" />
+    <list default="true" id="7e79b749-a63e-4609-b1e0-2031ec674542" name="Changes" comment="fixes">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/users/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/users/models.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="dev" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "ch3rk4"
+  }
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/ch3rk4/OnlineEdu.git",
+    "accountId": "6f96d88e-1535-4788-810a-49b80da077ca"
+  }
+}]]></component>
   <component name="ProjectColorInfo"><![CDATA[{
   "associatedIndex": 8
 }]]></component>
@@ -18,7 +51,9 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
-    "RunOnceActivity.ShowReadmeOnStart": "true"
+    "ASKED_MARK_IGNORED_FILES_AS_EXCLUDED": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "git-widget-placeholder": "HW1"
   }
 }]]></component>
   <component name="SharedIndexes">
@@ -37,6 +72,117 @@
       <option name="presentableId" value="Default" />
       <updated>1750609829258</updated>
     </task>
+    <task id="LOCAL-00001" summary="base">
+      <option name="closed" value="true" />
+      <created>1750610073346</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1750610073347</updated>
+    </task>
+    <task id="LOCAL-00002" summary="setup project">
+      <option name="closed" value="true" />
+      <created>1750610643269</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1750610643271</updated>
+    </task>
+    <task id="LOCAL-00003" summary="setup project">
+      <option name="closed" value="true" />
+      <created>1750610649720</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1750610649720</updated>
+    </task>
+    <task id="LOCAL-00004" summary="create settings from config">
+      <option name="closed" value="true" />
+      <created>1750610724194</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1750610724194</updated>
+    </task>
+    <task id="LOCAL-00005" summary="create apps users and lms">
+      <option name="closed" value="true" />
+      <created>1750611020515</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1750611020515</updated>
+    </task>
+    <task id="LOCAL-00006" summary="create models">
+      <option name="closed" value="true" />
+      <created>1750611237421</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1750611237423</updated>
+    </task>
+    <task id="LOCAL-00007" summary="create serializers for course">
+      <option name="closed" value="true" />
+      <created>1750611501836</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1750611501836</updated>
+    </task>
+    <task id="LOCAL-00008" summary="create serializers for course">
+      <option name="closed" value="true" />
+      <created>1750611560179</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1750611560179</updated>
+    </task>
+    <task id="LOCAL-00009" summary="create views">
+      <option name="closed" value="true" />
+      <created>1750611634998</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1750611635000</updated>
+    </task>
+    <task id="LOCAL-00010" summary="create users">
+      <option name="closed" value="true" />
+      <created>1750611980687</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1750611980688</updated>
+    </task>
+    <task id="LOCAL-00011" summary="create urls for config">
+      <option name="closed" value="true" />
+      <created>1750612030784</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1750612030784</updated>
+    </task>
+    <task id="LOCAL-00012" summary="create admins">
+      <option name="closed" value="true" />
+      <created>1750612092407</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1750612092407</updated>
+    </task>
+    <option name="localTasksCounter" value="13" />
     <servers />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="base" />
+    <MESSAGE value="setup project" />
+    <MESSAGE value="create settings from config" />
+    <MESSAGE value="create apps users and lms" />
+    <MESSAGE value="create models" />
+    <MESSAGE value="create serializers for course" />
+    <MESSAGE value="create views" />
+    <MESSAGE value="create users" />
+    <MESSAGE value="create urls for config" />
+    <MESSAGE value="create admins" />
+    <MESSAGE value="fixes" />
+    <option name="LAST_COMMIT_MESSAGE" value="fixes" />
   </component>
 </project>

@@ -40,10 +40,10 @@ def api_root(request):
 
 
 urlpatterns = [
-    path('', api_root, name='api-root'),  # Корневая страница
+    path('', api_root, name='api-root'),
     path('admin/', admin.site.urls),
-    path('api/', include('lms.urls')),
     path('api/', include('users.urls')),
+    path('api/', include('lms.urls')),
 ]
 
 if settings.DEBUG:

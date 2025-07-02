@@ -66,6 +66,7 @@ class PaymentFilter(django_filters.FilterSet):
 
 class PaymentViewSet(viewsets.ModelViewSet):
     """ViewSet для работы с платежами"""
+    # Базовый queryset для роутера
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
     permission_classes = [IsAuthenticated]
@@ -89,6 +90,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
 
 
 class UserViewSet(viewsets.ModelViewSet):
+    # Базовый queryset для роутера
     queryset = User.objects.all()
     permission_classes = [IsOwnerOrReadOnly]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]

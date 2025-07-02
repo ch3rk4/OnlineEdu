@@ -8,6 +8,8 @@ from users.permissions import IsModeratorOrOwner
 
 
 class CourseViewSet(viewsets.ModelViewSet):
+    # Базовый queryset для роутера
+    queryset = Course.objects.all()
     permission_classes = [IsAuthenticated, IsModeratorOrOwner]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['title', 'description']
@@ -48,6 +50,8 @@ class CourseViewSet(viewsets.ModelViewSet):
 
 
 class LessonListCreateView(generics.ListCreateAPIView):
+    # Базовый queryset
+    queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
     permission_classes = [IsAuthenticated, IsModeratorOrOwner]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
@@ -74,6 +78,8 @@ class LessonListCreateView(generics.ListCreateAPIView):
 
 
 class LessonRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    # Базовый queryset
+    queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
     permission_classes = [IsAuthenticated, IsModeratorOrOwner]
 

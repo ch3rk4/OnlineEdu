@@ -2,17 +2,18 @@ from rest_framework import viewsets, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from .models import Course, Lesson
-from .serializers import CourseSerializer, CourseDetailSerializer, LessonSerializer
+from .serializers import CourseListSerializer, CourseDetailSerializer, LessonSerializer
 
 
 class CourseViewSet(viewsets.ModelViewSet):
-    queryset = Course.objects.all()
-    serializer_class = CourseSerializer
+    queryset = Course.objects.prefetch_related('lessons')
 
     def get_serializer_class(self):
-        if self.action == 'retrieve':
+        if self.action == 'list':
+            return CourseListSerializer
+        elif self.action == 'retrieve':
             return CourseDetailSerializer
-        return CourseSerializer
+        return CourseDetailSerializer
 
     @action(detail=True, methods=['get'])
     def lessons(self, request, pk=None):
@@ -25,10 +26,10 @@ class CourseViewSet(viewsets.ModelViewSet):
 
 # Generic views для уроков
 class LessonListCreateView(generics.ListCreateAPIView):
-    queryset = Lesson.objects.all()
+    queryset = Lesson.objects.select_related('course')
     serializer_class = LessonSerializer
 
 
 class LessonRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Lesson.objects.all()
+    queryset = Lesson.objects.select_related('course')
     serializer_class = LessonSerializer

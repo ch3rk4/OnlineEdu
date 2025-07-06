@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Course, Lesson
+from .models import Course, Lesson, Subscription
 
 
 class LessonInline(admin.TabularInline):
@@ -9,18 +9,31 @@ class LessonInline(admin.TabularInline):
     readonly_fields = ('owner',)
 
 
+class SubscriptionInline(admin.TabularInline):
+    model = Subscription
+    extra = 0
+    fields = ('user', 'created_at', 'is_active')
+    readonly_fields = ('created_at',)
+
+
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
-    list_display = ('title', 'owner', 'created_at', 'lessons_count')
+    list_display = ('title', 'owner', 'created_at', 'lessons_count', 'subscribers_count')
     list_filter = ('created_at', 'owner')
     search_fields = ('title', 'description', 'owner__email')
-    inlines = [LessonInline]
+    inlines = [LessonInline, SubscriptionInline]
     autocomplete_fields = ['owner']
     readonly_fields = ('created_at', 'updated_at')
 
     def lessons_count(self, obj):
         return obj.lessons.count()
+
     lessons_count.short_description = 'Количество уроков'
+
+    def subscribers_count(self, obj):
+        return obj.subscriptions.filter(is_active=True).count()
+
+    subscribers_count.short_description = 'Подписчиков'
 
     def get_queryset(self, request):
         """Показываем курсы в зависимости от роли пользователя"""
@@ -97,3 +110,20 @@ class LessonAdmin(admin.ModelAdmin):
             else:
                 kwargs["queryset"] = Course.objects.filter(owner=request.user)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+
+@admin.register(Subscription)
+class SubscriptionAdmin(admin.ModelAdmin):
+    list_display = ('user', 'course', 'created_at', 'is_active')
+    list_filter = ('is_active', 'created_at', 'course')
+    search_fields = ('user__email', 'course__title')
+    autocomplete_fields = ['user', 'course']
+    readonly_fields = ('created_at',)
+
+    def has_add_permission(self, request):
+        """Только админы могут создавать подписки через админку"""
+        return request.user.is_superuser
+
+    def has_delete_permission(self, request, obj=None):
+        """Только админы могут удалять подписки через админку"""
+        return request.user.is_superuser

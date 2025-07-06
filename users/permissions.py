@@ -14,8 +14,24 @@ class IsModeratorOrOwner(permissions.BasePermission):
         if not request.user.is_authenticated:
             return False
 
+        # Определяем действие для разных типов view
+        action = None
+        if hasattr(view, 'action'):
+            # Для ViewSet'ов
+            action = view.action
+        else:
+            # Для generic view'ов определяем action по HTTP методу
+            if request.method == 'POST':
+                action = 'create'
+            elif request.method in ['PUT', 'PATCH']:
+                action = 'update'
+            elif request.method == 'DELETE':
+                action = 'destroy'
+            elif request.method == 'GET':
+                action = 'retrieve' if hasattr(view, 'get_object') else 'list'
+
         # Для создания объектов - только не модераторы (владельцы)
-        if view.action == 'create':
+        if action == 'create':
             return not request.user.groups.filter(name='Moderators').exists()
 
         return True
@@ -28,11 +44,25 @@ class IsModeratorOrOwner(permissions.BasePermission):
         # Проверяем, является ли пользователь модератором
         is_moderator = request.user.groups.filter(name='Moderators').exists()
 
+        # Определяем действие
+        action = None
+        if hasattr(view, 'action'):
+            action = view.action
+        else:
+            if request.method == 'POST':
+                action = 'create'
+            elif request.method in ['PUT', 'PATCH']:
+                action = 'update'
+            elif request.method == 'DELETE':
+                action = 'destroy'
+            elif request.method == 'GET':
+                action = 'retrieve'
+
         # Модераторы могут просматривать и редактировать, но не удалять
         if is_moderator:
-            if view.action == 'destroy':
+            if action == 'destroy':
                 return False
-            return view.action in ['retrieve', 'update', 'partial_update', 'list']
+            return action in ['retrieve', 'update', 'partial_update', 'list']
 
         # Обычные пользователи могут работать только со своими объектами
         # Проверяем владельца объекта

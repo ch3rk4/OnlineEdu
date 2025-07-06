@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     # Third party apps
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',  # Добавляем для blacklist токенов
     'django_filters',
     'drf_spectacular',
 
@@ -217,6 +218,9 @@ SPECTACULAR_SETTINGS = {
 
 # Custom user model
 AUTH_USER_MODEL = 'users.User'
+
+# Frontend URL для Stripe redirect'ов
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
 
 # Stripe settings
 STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY', 'pk_test_...')

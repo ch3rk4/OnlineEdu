@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from django.http import JsonResponse
+from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from rest_framework.decorators import api_view, permission_classes
 from drf_spectacular.views import (
@@ -16,7 +16,7 @@ from drf_spectacular.views import (
 @permission_classes([AllowAny])
 def api_root(request):
     """Корневая страница API с описанием доступных endpoints"""
-    return JsonResponse({
+    return Response({
         "message": "OnlineEdu API",
         "version": "1.0.0",
         "documentation": {

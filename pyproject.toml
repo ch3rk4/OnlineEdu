@@ -10,6 +10,7 @@ python = "^3.13"
 django-filter = "^25.1"
 djangorestframework-simplejwt = "^5.5.0"
 drf-spectacular = "^0.28.0"
+stripe = "^12.3.0"
 
 
 [build-system]

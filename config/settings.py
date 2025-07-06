@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'django_filters',
+    'drf_spectacular',
 
     # Local apps
     'users',
@@ -120,6 +121,7 @@ REST_FRAMEWORK = {
         'django_filters.rest_framework.DjangoFilterBackend',
         'rest_framework.filters.OrderingFilter',
     ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 # JWT Settings
@@ -140,5 +142,83 @@ SIMPLE_JWT = {
     'TOKEN_TYPE_CLAIM': 'token_type',
 }
 
+# drf-spectacular settings
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'OnlineEdu API',
+    'DESCRIPTION': '''
+    Образовательная платформа с курсами, уроками и системой подписок.
+
+    ## Возможности API:
+
+    ### 🔐 Аутентификация
+    - JWT токены с автоматическим обновлением
+    - Регистрация и авторизация пользователей
+    - Система ролей (пользователи, модераторы, администраторы)
+
+    ### 📚 Образовательный контент
+    - CRUD операции с курсами и уроками
+    - Валидация YouTube ссылок для видео
+    - Система подписок на обновления курсов
+    - Фильтрация и поиск по контенту
+
+    ### 💳 Платежная система
+    - Интеграция со Stripe для приема платежей
+    - Создание платежных сессий
+    - Отслеживание статуса платежей
+
+    ### 👥 Управление пользователями
+    - Профили пользователей с публичной и приватной информацией
+    - История платежей пользователей
+    - Система прав доступа
+
+    ### 📄 Дополнительные возможности
+    - Пагинация для всех списков
+    - Подробная фильтрация и сортировка
+    - Comprehensive API документация
+    ''',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'CONTACT': {
+        'name': 'OnlineEdu Support',
+        'email': 'support@onlineedu.example.com',
+    },
+    'LICENSE': {
+        'name': 'MIT License',
+    },
+    'TAGS': [
+        {
+            'name': 'Authentication',
+            'description': 'Регистрация, авторизация и управление JWT токенами'
+        },
+        {
+            'name': 'Courses',
+            'description': 'Управление курсами - создание, просмотр, редактирование'
+        },
+        {
+            'name': 'Lessons',
+            'description': 'Управление уроками с валидацией YouTube ссылок'
+        },
+        {
+            'name': 'Users',
+            'description': 'Управление пользователями и профилями'
+        },
+        {
+            'name': 'Payments',
+            'description': 'Платежная система с интеграцией Stripe'
+        },
+        {
+            'name': 'Subscriptions',
+            'description': 'Подписки пользователей на обновления курсов'
+        },
+    ],
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SORT_OPERATIONS': False,
+}
+
 # Custom user model
 AUTH_USER_MODEL = 'users.User'
+
+# Stripe settings
+STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY', 'pk_test_...')
+STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', 'sk_test_...')
+STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', 'whsec_...')

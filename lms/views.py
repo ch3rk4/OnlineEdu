@@ -4,14 +4,99 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiExample
+from drf_spectacular.types import OpenApiTypes
 from .models import Course, Lesson, Subscription
 from .serializers import CourseListSerializer, CourseDetailSerializer, LessonSerializer
 from .paginators import CourseLessonPaginator
 from users.permissions import IsModeratorOrOwner
 
 
+@extend_schema_view(
+    list=extend_schema(
+        tags=['Courses'],
+        summary='Список курсов',
+        description='''
+        Получение списка курсов с пагинацией и фильтрацией.
+
+        **Права доступа:**
+        - Обычные пользователи видят только свои курсы
+        - Модераторы и админы видят все курсы
+
+        **Включает информацию о подписке** текущего пользователя на каждый курс.
+
+        **Поиск:** используйте параметр `search` для поиска по названию и описанию.
+        ''',
+        parameters=[
+            OpenApiParameter(name='search', type=OpenApiTypes.STR,
+                             description='Поиск по названию и описанию курса'),
+            OpenApiParameter(name='ordering', type=OpenApiTypes.STR,
+                             description='Сортировка: created_at, title'),
+        ]
+    ),
+    create=extend_schema(
+        tags=['Courses'],
+        summary='Создание курса',
+        description='''
+        Создание нового курса.
+
+        **Ограничения:**
+        - Только обычные пользователи могут создавать курсы
+        - Модераторы НЕ могут создавать курсы
+        - Создатель автоматически становится владельцем курса
+        ''',
+        examples=[
+            OpenApiExample(
+                name='Новый курс',
+                value={
+                    "title": "Python для начинающих",
+                    "description": "Полный курс изучения языка Python с нуля"
+                }
+            )
+        ]
+    ),
+    retrieve=extend_schema(
+        tags=['Courses'],
+        summary='Детали курса',
+        description='''
+        Получение детальной информации о курсе.
+
+        **Включает:**
+        - Полную информацию о курсе
+        - Список всех уроков курса
+        - Статус подписки текущего пользователя
+        - Количество уроков
+        '''
+    ),
+    update=extend_schema(
+        tags=['Courses'],
+        summary='Обновление курса',
+        description='''
+        Полное обновление курса.
+
+        **Права доступа:**
+        - Владелец курса может редактировать
+        - Модераторы могут редактировать любые курсы
+        '''
+    ),
+    partial_update=extend_schema(
+        tags=['Courses'],
+        summary='Частичное обновление курса',
+        description='Частичное обновление полей курса.'
+    ),
+    destroy=extend_schema(
+        tags=['Courses'],
+        summary='Удаление курса',
+        description='''
+        Удаление курса.
+
+        **Ограничения:**
+        - Только владелец может удалить курс
+        - Модераторы НЕ могут удалять курсы
+        '''
+    )
+)
 class CourseViewSet(viewsets.ModelViewSet):
-    # Базовый queryset для роутера
     queryset = Course.objects.all()
     permission_classes = [IsAuthenticated, IsModeratorOrOwner]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
@@ -44,6 +129,16 @@ class CourseViewSet(viewsets.ModelViewSet):
         """Автоматически устанавливаем текущего пользователя как владельца курса"""
         serializer.save(owner=self.request.user)
 
+    @extend_schema(
+        tags=['Courses'],
+        summary='Уроки курса',
+        description='''
+        Получение всех уроков конкретного курса.
+
+        **Возвращает:** список уроков с полной информацией о каждом уроке.
+        ''',
+        responses={200: LessonSerializer(many=True)}
+    )
     @action(detail=True, methods=['get'])
     def lessons(self, request, pk=None):
         """Получить все уроки конкретного курса"""
@@ -53,8 +148,55 @@ class CourseViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=['Lessons'],
+        summary='Список уроков',
+        description='''
+        Получение списка уроков с пагинацией и фильтрацией.
+
+        **Права доступа:**
+        - Обычные пользователи видят только свои уроки
+        - Модераторы и админы видят все уроки
+
+        **Поиск:** по названию урока, описанию и названию курса.
+        ''',
+        parameters=[
+            OpenApiParameter(name='search', type=OpenApiTypes.STR,
+                             description='Поиск по названию урока, описанию, названию курса'),
+            OpenApiParameter(name='ordering', type=OpenApiTypes.STR,
+                             description='Сортировка: created_at, title'),
+        ]
+    ),
+    post=extend_schema(
+        tags=['Lessons'],
+        summary='Создание урока',
+        description='''
+        Создание нового урока.
+
+        **Валидация видео:**
+        - Поддерживаются только ссылки на YouTube
+        - Допустимые домены: youtube.com, youtu.be
+        - Ссылка должна вести на конкретное видео
+
+        **Ограничения:**
+        - Только обычные пользователи могут создавать уроки
+        - Модераторы НЕ могут создавать уроки
+        ''',
+        examples=[
+            OpenApiExample(
+                name='Новый урок',
+                value={
+                    "title": "Введение в Python",
+                    "description": "Первый урок курса по изучению Python",
+                    "video_url": "https://youtube.com/watch?v=abc123",
+                    "course": 1
+                }
+            )
+        ]
+    )
+)
 class LessonListCreateView(generics.ListCreateAPIView):
-    # Базовый queryset
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
     permission_classes = [IsAuthenticated, IsModeratorOrOwner]
@@ -82,8 +224,43 @@ class LessonListCreateView(generics.ListCreateAPIView):
         serializer.save(owner=self.request.user)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=['Lessons'],
+        summary='Детали урока',
+        description='Получение детальной информации об уроке.'
+    ),
+    put=extend_schema(
+        tags=['Lessons'],
+        summary='Обновление урока',
+        description='''
+        Полное обновление урока.
+
+        **Права доступа:**
+        - Владелец урока может редактировать
+        - Модераторы могут редактировать любые уроки
+
+        **Валидация:** применяется проверка YouTube ссылок.
+        '''
+    ),
+    patch=extend_schema(
+        tags=['Lessons'],
+        summary='Частичное обновление урока',
+        description='Частичное обновление полей урока.'
+    ),
+    delete=extend_schema(
+        tags=['Lessons'],
+        summary='Удаление урока',
+        description='''
+        Удаление урока.
+
+        **Ограничения:**
+        - Только владелец может удалить урок
+        - Модераторы НЕ могут удалять уроки
+        '''
+    )
+)
 class LessonRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    # Базовый queryset
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
     permission_classes = [IsAuthenticated, IsModeratorOrOwner]
@@ -102,6 +279,51 @@ class LessonRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
             return Lesson.objects.filter(owner=self.request.user).select_related('course', 'owner')
 
 
+@extend_schema_view(
+    post=extend_schema(
+        tags=['Subscriptions'],
+        summary='Управление подпиской',
+        description='''
+        Создание или удаление подписки на курс.
+
+        **Логика работы:**
+        - Если подписка НЕ существует → создается новая подписка
+        - Если подписка существует → удаляется существующая подписка
+
+        **Один запрос для двух действий** - удобно для toggle-кнопок в UI.
+        ''',
+        request={
+            'application/json': {
+                'type': 'object',
+                'properties': {
+                    'course_id': {
+                        'type': 'integer',
+                        'description': 'ID курса для подписки'
+                    }
+                },
+                'required': ['course_id']
+            }
+        },
+        examples=[
+            OpenApiExample(
+                name='Подписка на курс',
+                value={"course_id": 1}
+            )
+        ]
+    ),
+    get=extend_schema(
+        tags=['Subscriptions'],
+        summary='Мои подписки',
+        description='''
+        Получение списка всех подписок текущего пользователя.
+
+        **Возвращает:**
+        - Список активных и неактивных подписок
+        - Информацию о каждом курсе
+        - Даты создания подписок
+        '''
+    )
+)
 class SubscriptionAPIView(APIView):
     """
     APIView для управления подписками на курсы.
@@ -128,17 +350,19 @@ class SubscriptionAPIView(APIView):
         if subs_item.exists():
             subs_item.delete()
             message = 'подписка удалена'
+            is_subscribed = False
         # Если подписки у пользователя на этот курс нет - создаем ее
         else:
             Subscription.objects.create(user=user, course=course_item)
             message = 'подписка добавлена'
+            is_subscribed = True
 
         # Возвращаем ответ в API
         return Response({
             "message": message,
-            "course_id": course_id,
+            "course_id": str(course_id),
             "course_title": course_item.title,
-            "is_subscribed": not subs_item.exists()  # Новое состояние подписки
+            "is_subscribed": is_subscribed
         })
 
     def get(self, request, *args, **kwargs):

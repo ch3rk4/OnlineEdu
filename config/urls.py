@@ -5,6 +5,11 @@ from django.conf.urls.static import static
 from django.http import JsonResponse
 from rest_framework.permissions import AllowAny
 from rest_framework.decorators import api_view, permission_classes
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularRedocView,
+    SpectacularSwaggerView
+)
 
 
 @api_view(['GET'])
@@ -13,7 +18,12 @@ def api_root(request):
     """Корневая страница API с описанием доступных endpoints"""
     return JsonResponse({
         "message": "OnlineEdu API",
-        "version": "1.0",
+        "version": "1.0.0",
+        "documentation": {
+            "swagger": request.build_absolute_uri('/api/docs/'),
+            "redoc": request.build_absolute_uri('/api/redoc/'),
+            "openapi_schema": request.build_absolute_uri('/api/schema/')
+        },
         "authentication": {
             "register": "/api/auth/register/",
             "login": "/api/auth/login/",
@@ -24,6 +34,7 @@ def api_root(request):
             "lessons": "/api/lessons/",
             "users": "/api/users/",
             "payments": "/api/payments/",
+            "subscriptions": "/api/subscription/",
             "admin": "/admin/"
         },
         "examples": {
@@ -35,6 +46,14 @@ def api_root(request):
             "payments_cash_only": "/api/payments/?payment_method=cash",
             "payments_sorted": "/api/payments/?ordering=-payment_date"
         },
+        "features": [
+            "JWT Authentication",
+            "YouTube URL Validation",
+            "Course Subscriptions",
+            "Stripe Payments",
+            "Pagination & Filtering",
+            "Role-based Access Control"
+        ],
         "auth_header": "Authorization: Bearer <your_access_token>"
     })
 
@@ -42,8 +61,15 @@ def api_root(request):
 urlpatterns = [
     path('', api_root, name='api-root'),
     path('admin/', admin.site.urls),
+
+    # API endpoints
     path('api/', include('users.urls')),
     path('api/', include('lms.urls')),
+
+    # API Documentation
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 ]
 
 if settings.DEBUG:

@@ -7,6 +7,12 @@ from .views import (
     UserRegistrationView,
     CustomTokenObtainPairView
 )
+from .stripe_views import (
+    CreateStripePaymentView,
+    StripePaymentStatusView,
+    StripeWebhookView,
+    UserStripePaymentsView
+)
 
 router = DefaultRouter()
 router.register(r'users', UserViewSet)
@@ -17,6 +23,12 @@ urlpatterns = [
     path('auth/register/', UserRegistrationView.as_view(), name='user-register'),
     path('auth/login/', CustomTokenObtainPairView.as_view(), name='token-obtain-pair'),
     path('auth/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
+
+    # Stripe платежи
+    path('payments/stripe/create/', CreateStripePaymentView.as_view(), name='stripe-payment-create'),
+    path('payments/stripe/<int:payment_id>/status/', StripePaymentStatusView.as_view(), name='stripe-payment-status'),
+    path('payments/stripe/my/', UserStripePaymentsView.as_view(), name='user-stripe-payments'),
+    path('payments/stripe/webhook/', StripeWebhookView.as_view(), name='stripe-webhook'),
 
     # API роуты
     path('', include(router.urls)),

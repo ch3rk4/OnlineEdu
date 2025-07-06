@@ -15,6 +15,7 @@ from .serializers import (
     UserRegistrationSerializer
 )
 from .permissions import IsOwnerOrReadOnly
+from lms.paginators import UserPaginator, PaymentPaginator
 
 
 class UserRegistrationView(generics.CreateAPIView):
@@ -74,6 +75,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
     filterset_class = PaymentFilter
     ordering_fields = ['payment_date']
     ordering = ['-payment_date']
+    pagination_class = PaymentPaginator
 
     def get_queryset(self):
         """Пользователи видят только свои платежи, модераторы и админы - все"""
@@ -97,6 +99,7 @@ class UserViewSet(viewsets.ModelViewSet):
     search_fields = ['email', 'first_name', 'last_name']
     ordering_fields = ['date_joined', 'email']
     ordering = ['-date_joined']
+    pagination_class = UserPaginator
 
     def get_serializer_class(self):
         """Выбираем сериализатор в зависимости от действия и пользователя"""
@@ -138,6 +141,12 @@ class UserViewSet(viewsets.ModelViewSet):
             )
 
         payments = user.payments.all()
+        paginator = PaymentPaginator()
+        page = paginator.paginate_queryset(payments, request)
+        if page is not None:
+            serializer = PaymentSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
         serializer = PaymentSerializer(payments, many=True)
         return Response(serializer.data)
 

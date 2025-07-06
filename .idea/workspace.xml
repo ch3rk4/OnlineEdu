@@ -22,7 +22,7 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="dev" />
+        <entry key="$PROJECT_DIR$" value="HW2" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -48,13 +48,13 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ASKED_MARK_IGNORED_FILES_AS_EXCLUDED": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "#1 on HW1"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_MARK_IGNORED_FILES_AS_EXCLUDED&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;HW3&quot;
   }
-}]]></component>
+}</component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -175,7 +175,47 @@
       <option name="project" value="LOCAL" />
       <updated>1750614393419</updated>
     </task>
-    <option name="localTasksCounter" value="14" />
+    <task id="LOCAL-00014" summary="module with Payment">
+      <option name="closed" value="true" />
+      <created>1751445907565</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1751445907565</updated>
+    </task>
+    <task id="LOCAL-00015" summary="lesson output field">
+      <option name="closed" value="true" />
+      <created>1751446172705</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1751446172705</updated>
+    </task>
+    <task id="LOCAL-00016" summary="create init_data">
+      <option name="closed" value="true" />
+      <created>1751446430015</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1751446430015</updated>
+    </task>
+    <task id="LOCAL-00017" summary="new funcs JWT and CRUD">
+      <option name="closed" value="true" />
+      <created>1751447638098</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1751447638098</updated>
+    </task>
+    <task id="LOCAL-00018" summary="fixes">
+      <option name="closed" value="true" />
+      <created>1751447910548</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1751447910548</updated>
+    </task>
+    <option name="localTasksCounter" value="19" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -189,6 +229,10 @@
     <MESSAGE value="create users" />
     <MESSAGE value="create urls for config" />
     <MESSAGE value="create admins" />
+    <MESSAGE value="module with Payment" />
+    <MESSAGE value="lesson output field" />
+    <MESSAGE value="create init_data" />
+    <MESSAGE value="new funcs JWT and CRUD" />
     <MESSAGE value="fixes" />
     <option name="LAST_COMMIT_MESSAGE" value="fixes" />
   </component>

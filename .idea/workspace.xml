@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7e79b749-a63e-4609-b1e0-2031ec674542" name="Changes" comment="refresh lms/admin and urls, users/views, create paginators" />
+    <list default="true" id="7e79b749-a63e-4609-b1e0-2031ec674542" name="Changes" comment="write tests" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -245,7 +245,15 @@
       <option name="project" value="LOCAL" />
       <updated>1751806086931</updated>
     </task>
-    <option name="localTasksCounter" value="23" />
+    <task id="LOCAL-00023" summary="write tests">
+      <option name="closed" value="true" />
+      <created>1751806770817</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1751806770817</updated>
+    </task>
+    <option name="localTasksCounter" value="24" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -268,6 +276,7 @@
     <MESSAGE value="refresh lms/serializers" />
     <MESSAGE value="refresh lms/models and views" />
     <MESSAGE value="refresh lms/admin and urls, users/views, create paginators" />
-    <option name="LAST_COMMIT_MESSAGE" value="refresh lms/admin and urls, users/views, create paginators" />
+    <MESSAGE value="write tests" />
+    <option name="LAST_COMMIT_MESSAGE" value="write tests" />
   </component>
 </project>

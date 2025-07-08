@@ -211,13 +211,15 @@ class StripePaymentStatusView(APIView):
         ]
     )
     def get(self, request, payment_id):
-        # Получаем платеж пользователя
-        payment = get_object_or_404(
-            Payment,
-            id=payment_id,
-            user=request.user,
-            payment_method='stripe'
-        )
+        # Сначала получаем платеж пользователя (без фильтра по методу оплаты)
+        payment = get_object_or_404(Payment, id=payment_id, user=request.user)
+
+        # Проверяем что это Stripe платеж
+        if payment.payment_method != 'stripe':
+            return Response(
+                {"error": "Этот платеж не был создан через Stripe"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         if not payment.stripe_session_id:
             return Response(

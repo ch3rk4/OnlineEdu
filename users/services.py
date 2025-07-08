@@ -1,4 +1,5 @@
 import stripe
+import time
 from django.conf import settings
 from typing import Dict, Optional
 import logging
@@ -104,6 +105,10 @@ class StripeService:
             Dict с данными сессии и ссылкой на оплату
         """
         try:
+            # Используем текущее время + 1 час для expires_at
+            current_timestamp = int(time.time())
+            expires_at = current_timestamp + 3600  # Истекает через час
+
             session_data = {
                 'payment_method_types': ['card'],
                 'line_items': [{
@@ -113,9 +118,7 @@ class StripeService:
                 'mode': 'payment',
                 'success_url': success_url,
                 'cancel_url': cancel_url,
-                'expires_at': int((stripe.util.convert_to_stripe_object({
-                    'current_timestamp': stripe.util.convert_to_unix_timestamp()
-                }).current_timestamp + 3600))  # Истекает через час
+                'expires_at': expires_at
             }
 
             # Добавляем email клиента если предоставлен
@@ -218,11 +221,6 @@ class StripeService:
             success_url = f"{settings.FRONTEND_URL}/payment/success?session_id={{CHECKOUT_SESSION_ID}}"
             cancel_url = f"{settings.FRONTEND_URL}/payment/cancel"
 
-            # Если нет настроек frontend URL, используем локальные
-            if not hasattr(settings, 'FRONTEND_URL'):
-                success_url = "http://localhost:3000/payment/success?session_id={CHECKOUT_SESSION_ID}"
-                cancel_url = "http://localhost:3000/payment/cancel"
-
             session_result = StripeService.create_checkout_session(
                 price_id=price_id,
                 success_url=success_url,
@@ -293,8 +291,8 @@ class StripeService:
             price_id = price_result['price_id']
 
             # 3. Создаем сессию оплаты
-            success_url = f"{getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')}/payment/success?session_id={{CHECKOUT_SESSION_ID}}"
-            cancel_url = f"{getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')}/payment/cancel"
+            success_url = f"{settings.FRONTEND_URL}/payment/success?session_id={{CHECKOUT_SESSION_ID}}"
+            cancel_url = f"{settings.FRONTEND_URL}/payment/cancel"
 
             session_result = StripeService.create_checkout_session(
                 price_id=price_id,

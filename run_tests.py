@@ -42,15 +42,15 @@ def main():
         "Установка coverage"
     )
 
-    # Создание тестовых групп
-    print("\n👥 Создание групп пользователей...")
-    groups_result = run_command(
-        "python manage.py create_groups",
-        "Создание групп пользователей"
+    # Настройка базы данных
+    print("\n🗄️  Настройка базы данных...")
+    setup_result = run_command(
+        "python manage.py setup_db --skip-migrate",
+        "Настройка базы данных"
     )
 
-    # Запуск миграций
-    print("\n🗄️  Применение миграций...")
+    # Применение миграций
+    print("\n📦 Применение миграций...")
     migrate_result = run_command(
         "python manage.py migrate",
         "Применение миграций"
@@ -60,11 +60,8 @@ def main():
     print("\n🧪 Запуск тестов с измерением покрытия...")
 
     test_commands = [
-        # Запуск тестов LMS приложения
-        "coverage run --source='.' --omit='*/venv/*,*/migrations/*,manage.py,*/settings.py,*/tests.py' manage.py test lms.tests",
-
-        # Запуск тестов Users приложения
-        "coverage run --append --source='.' --omit='*/venv/*,*/migrations/*,manage.py,*/settings.py,*/tests.py' manage.py test users.tests",
+        # Запуск всех тестов одной командой с coverage
+        "coverage run --source='.' --omit='*/venv/*,*/migrations/*,manage.py,*/settings.py,*/wsgi.py,*/asgi.py,*/test_*,*/tests.py' manage.py test",
 
         # Создание отчета покрытия
         "coverage report -m",
@@ -102,9 +99,15 @@ def main():
         print("   - Тесты прав доступа пользователей: ✅")
         print("   - Тесты всех API endpoints: ✅")
         print("   - Тесты пагинации: ✅")
+        print("   - Тесты Stripe интеграции: ✅")
         print("   - Отчет покрытия сгенерирован: ✅")
     else:
         print("\n❌ Некоторые тесты завершились с ошибками")
+        print("\n🔧 Возможные решения:")
+        print("   1. Проверьте что все зависимости установлены")
+        print("   2. Убедитесь что миграции применены")
+        print("   3. Проверьте настройки в settings.py")
+        print("   4. Запустите: python manage.py setup_db --with-data")
         sys.exit(1)
 
 

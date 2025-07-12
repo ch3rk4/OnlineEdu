@@ -4,7 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7e79b749-a63e-4609-b1e0-2031ec674542" name="Changes" comment="fixes" />
+    <list default="true" id="7e79b749-a63e-4609-b1e0-2031ec674542" name="Changes" comment="celery-beat">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -20,7 +22,7 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="HW5" />
+        <entry key="$PROJECT_DIR$" value="HW5.1" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -50,7 +52,7 @@
   "keyToString": {
     "ASKED_MARK_IGNORED_FILES_AS_EXCLUDED": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "HW5.1"
+    "git-widget-placeholder": "HW6"
   }
 }]]></component>
   <component name="SharedIndexes">
@@ -317,11 +319,18 @@
       <option name="project" value="LOCAL" />
       <updated>1751816879905</updated>
     </task>
-    <option name="localTasksCounter" value="32" />
+    <task id="LOCAL-00032" summary="celery-beat">
+      <option name="closed" value="true" />
+      <created>1752311960730</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1752311960730</updated>
+    </task>
+    <option name="localTasksCounter" value="33" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="setup project" />
     <MESSAGE value="create settings from config" />
     <MESSAGE value="create apps users and lms" />
     <MESSAGE value="create models" />
@@ -346,6 +355,7 @@
     <MESSAGE value="integration with Stripe" />
     <MESSAGE value="finish" />
     <MESSAGE value="fixes" />
-    <option name="LAST_COMMIT_MESSAGE" value="fixes" />
+    <MESSAGE value="celery-beat" />
+    <option name="LAST_COMMIT_MESSAGE" value="celery-beat" />
   </component>
 </project>

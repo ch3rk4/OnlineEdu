@@ -12,6 +12,14 @@ djangorestframework-simplejwt = "^5.5.0"
 drf-spectacular = "^0.28.0"
 stripe = "^12.3.0"
 
+# Зависимости для Celery и асинхронной обработки
+celery = "^5.3.0"                    # Основная библиотека Celery
+redis = "^5.0.0"                     # Python клиент для Redis
+django-celery-beat = "^2.5.0"       # Планировщик задач для Django + Celery
+django-celery-results = "^2.5.0"    # Сохранение результатов в Django БД (опционально)
+
+# Дополнительные полезные пакеты
+kombu = "^5.3.0"                     # Библиотека сообщений (используется Celery)
 
 [build-system]
 requires = ["poetry-core"]

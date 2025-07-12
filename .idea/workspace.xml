@@ -4,15 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7e79b749-a63e-4609-b1e0-2031ec674542" name="Changes" comment="finish">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/config/settings.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/config/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/run_tests.py" beforeDir="false" afterPath="$PROJECT_DIR$/run_tests.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/users/permissions.py" beforeDir="false" afterPath="$PROJECT_DIR$/users/permissions.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/users/services.py" beforeDir="false" afterPath="$PROJECT_DIR$/users/services.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/users/stripe_views.py" beforeDir="false" afterPath="$PROJECT_DIR$/users/stripe_views.py" afterDir="false" />
-    </list>
+    <list default="true" id="7e79b749-a63e-4609-b1e0-2031ec674542" name="Changes" comment="email masks" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -21,6 +13,7 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
+        <option value="HTML File" />
         <option value="Python Script" />
       </list>
     </option>
@@ -28,7 +21,7 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="HW5" />
+        <entry key="$PROJECT_DIR$" value="HW5.1" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -57,8 +50,9 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "ASKED_MARK_IGNORED_FILES_AS_EXCLUDED": "true",
+    "DefaultHtmlFileTemplate": "HTML File",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "HW5.1"
+    "git-widget-placeholder": "HW6"
   }
 }]]></component>
   <component name="SharedIndexes">
@@ -317,24 +311,95 @@
       <option name="project" value="LOCAL" />
       <updated>1751815393542</updated>
     </task>
-    <option name="localTasksCounter" value="31" />
+    <task id="LOCAL-00031" summary="fixes">
+      <option name="closed" value="true" />
+      <created>1751816879905</created>
+      <option name="number" value="00031" />
+      <option name="presentableId" value="LOCAL-00031" />
+      <option name="project" value="LOCAL" />
+      <updated>1751816879905</updated>
+    </task>
+    <task id="LOCAL-00032" summary="celery-beat">
+      <option name="closed" value="true" />
+      <created>1752311960730</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1752311960730</updated>
+    </task>
+    <task id="LOCAL-00033" summary="create celery in config">
+      <option name="closed" value="true" />
+      <created>1752313240614</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1752313240614</updated>
+    </task>
+    <task id="LOCAL-00034" summary="refresh django-settings">
+      <option name="closed" value="true" />
+      <created>1752313398247</created>
+      <option name="number" value="00034" />
+      <option name="presentableId" value="LOCAL-00034" />
+      <option name="project" value="LOCAL" />
+      <updated>1752313398247</updated>
+    </task>
+    <task id="LOCAL-00035" summary="create tasks for users">
+      <option name="closed" value="true" />
+      <created>1752313477950</created>
+      <option name="number" value="00035" />
+      <option name="presentableId" value="LOCAL-00035" />
+      <option name="project" value="LOCAL" />
+      <updated>1752313477950</updated>
+    </task>
+    <task id="LOCAL-00036" summary="create tasks for LMS">
+      <option name="closed" value="true" />
+      <created>1752313512937</created>
+      <option name="number" value="00036" />
+      <option name="presentableId" value="LOCAL-00036" />
+      <option name="project" value="LOCAL" />
+      <updated>1752313512937</updated>
+    </task>
+    <task id="LOCAL-00037" summary="fixes">
+      <option name="closed" value="true" />
+      <created>1752332394547</created>
+      <option name="number" value="00037" />
+      <option name="presentableId" value="LOCAL-00037" />
+      <option name="project" value="LOCAL" />
+      <updated>1752332394547</updated>
+    </task>
+    <task id="LOCAL-00038" summary="refresh tasks">
+      <option name="closed" value="true" />
+      <created>1752332512106</created>
+      <option name="number" value="00038" />
+      <option name="presentableId" value="LOCAL-00038" />
+      <option name="project" value="LOCAL" />
+      <updated>1752332512106</updated>
+    </task>
+    <task id="LOCAL-00039" summary="refresh models for messages">
+      <option name="closed" value="true" />
+      <created>1752332818848</created>
+      <option name="number" value="00039" />
+      <option name="presentableId" value="LOCAL-00039" />
+      <option name="project" value="LOCAL" />
+      <updated>1752332818848</updated>
+    </task>
+    <task id="LOCAL-00040" summary="email masks">
+      <option name="closed" value="true" />
+      <created>1752333289096</created>
+      <option name="number" value="00040" />
+      <option name="presentableId" value="LOCAL-00040" />
+      <option name="project" value="LOCAL" />
+      <updated>1752333289097</updated>
+    </task>
+    <option name="localTasksCounter" value="41" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="setup project" />
-    <MESSAGE value="create settings from config" />
-    <MESSAGE value="create apps users and lms" />
-    <MESSAGE value="create models" />
-    <MESSAGE value="create serializers for course" />
-    <MESSAGE value="create views" />
-    <MESSAGE value="create users" />
-    <MESSAGE value="create urls for config" />
     <MESSAGE value="create admins" />
     <MESSAGE value="module with Payment" />
     <MESSAGE value="lesson output field" />
     <MESSAGE value="create init_data" />
     <MESSAGE value="new funcs JWT and CRUD" />
-    <MESSAGE value="fixes" />
     <MESSAGE value="create validators for youtube" />
     <MESSAGE value="refresh lms/serializers" />
     <MESSAGE value="refresh lms/models and views" />
@@ -346,6 +411,15 @@
     <MESSAGE value="API-documentation with drf-spectacular" />
     <MESSAGE value="integration with Stripe" />
     <MESSAGE value="finish" />
-    <option name="LAST_COMMIT_MESSAGE" value="finish" />
+    <MESSAGE value="celery-beat" />
+    <MESSAGE value="create celery in config" />
+    <MESSAGE value="refresh django-settings" />
+    <MESSAGE value="create tasks for users" />
+    <MESSAGE value="create tasks for LMS" />
+    <MESSAGE value="fixes" />
+    <MESSAGE value="refresh tasks" />
+    <MESSAGE value="refresh models for messages" />
+    <MESSAGE value="email masks" />
+    <option name="LAST_COMMIT_MESSAGE" value="email masks" />
   </component>
 </project>

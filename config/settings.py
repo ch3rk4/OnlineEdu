@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',  # Добавляем для blacklist токенов
     'django_filters',
     'drf_spectacular',
+    'django_celery_beat',  # ← НОВОЕ: Celery Beat для периодических задач
 
     # Local apps
     'users',
@@ -226,3 +227,144 @@ FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
 STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY', 'pk_test_...')
 STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', 'sk_test_...')
 STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', 'whsec_...')
+
+# ============================================
+# ↓ НОВЫЕ НАСТРОЙКИ CELERY - ДОБАВЬТЕ ЭТО ↓
+# ============================================
+
+# Celery Configuration
+CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_ENABLE_UTC = False
+
+# Celery Beat Configuration
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+# Email Configuration
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # Для разработки
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'  # Для продакшена
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@onlineedu.com')
+
+# Redis Cache (опционально)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': os.getenv('REDIS_URL', 'redis://localhost:6379/1'),
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}
+
+"""
+Настройки Celery и Redis для асинхронной обработки задач
+
+Эти настройки определяют как Celery будет подключаться к Redis и
+как будут обрабатываться асинхронные задачи.
+"""
+
+# ===== НАСТРОЙКИ REDIS =====
+# Redis используется как брокер сообщений (message broker) для Celery
+# Все настройки берем из переменных окружения для безопасности
+
+REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
+REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
+REDIS_DB = int(os.getenv('REDIS_DB', 0))
+REDIS_PASSWORD = os.getenv('REDIS_PASSWORD', None)
+
+# Формируем URL для подключения к Redis
+if REDIS_PASSWORD:
+    REDIS_URL = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+else:
+    REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+
+# ===== НАСТРОЙКИ CELERY =====
+
+# Брокер сообщений - где Celery хранит очередь задач
+CELERY_BROKER_URL = REDIS_URL
+
+# Где Celery будет сохранять результаты выполнения задач
+CELERY_RESULT_BACKEND = REDIS_URL
+
+# Принимаем задачи в формате JSON (безопаснее чем pickle)
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+
+# Временная зона для задач (должна совпадать с TIME_ZONE)
+CELERY_TIMEZONE = TIME_ZONE
+
+# Настройки для celery-beat (планировщик задач)
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+# Время жизни результатов задач (7 дней)
+CELERY_RESULT_EXPIRES = 60 * 60 * 24 * 7
+
+# ===== НАСТРОЙКИ CELERY-BEAT =====
+
+# Расписание периодических задач
+CELERY_BEAT_SCHEDULE = {
+    # Задача для блокировки неактивных пользователей
+    'block_inactive_users': {
+        'task': 'users.tasks.block_inactive_users',
+        'schedule': 86400.0,  # Каждые 24 часа (в секундах)
+        # Альтернативно можно использовать crontab:
+        # 'schedule': crontab(hour=3, minute=0),  # Каждый день в 3:00
+    },
+
+    # Пример задачи для очистки старых данных (если понадобится)
+    'cleanup_old_data': {
+        'task': 'lms.tasks.cleanup_old_data',
+        'schedule': 60 * 60 * 24 * 7,  # Раз в неделю
+    },
+}
+
+# ===== НАСТРОЙКИ EMAIL ДЛЯ РАССЫЛКИ =====
+
+# Настройки для отправки email через Celery
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'OnlineEdu <noreply@onlineedu.com>')
+
+# Настройки для разработки (выводить письма в консоль)
+if DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# ===== ДОПОЛНИТЕЛЬНЫЕ НАСТРОЙКИ =====
+
+# Логирование для отладки Celery
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': 'celery.log',
+        },
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'celery': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}

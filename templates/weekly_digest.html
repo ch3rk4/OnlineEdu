@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ваш еженедельный дайджест - OnlineEdu</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            line-height: 1.6;
+        }
+
+        .email-container {
+            max-width: 650px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        .email-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .email-body {
+            padding: 30px;
+        }
+
+        .digest-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border-left: 4px solid #667eea;
+            background-color: #f8f9fa;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .course-card {
+            background-color: #ffffff;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .course-card:hover {
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background-color: #ffffff;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 12px 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: bold;
+            margin: 10px 5px;
+            transition: transform 0.3s ease;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+        }
+
+        .email-footer {
+            background-color: #343a40;
+            color: #ffffff;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .motivational-quote {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 20px 0;
+            font-style: italic;
+        }
+
+        @media only screen and (max-width: 600px) {
+            .email-container {
+                width: 100% !important;
+            }
+
+            .email-body {
+                padding: 20px !important;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Заголовок дайджеста -->
+        <div class="email-header">
+            <h1 style="margin: 0; font-size: 28px;">📚 Ваш еженедельный дайджест</h1>
+            <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">
+                {{ week_start|date:"d.m" }} - {{ week_start|date:"d.m.Y"|add_days:7 }}
+            </p>
+        </div>
+
+        <div class="email-body">
+            <!-- Персональное приветствие -->
+            <h2 style="color: #343a40; margin-top: 0;">
+                Привет, {{ user.first_name|default:user.email }}! 👋
+            </h2>
+
+            <p>Время для еженедельного обзора вашего образовательного путешествия. Давайте посмотрим, что происходило в ваших курсах за последнюю неделю!</p>
+
+            <!-- Статистика пользователя -->
+            <div class="digest-section">
+                <h3 style="margin-top: 0; color: #667eea;">📊 Ваша активность</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number">{{ courses.count }}</div>
+                        <div>Активных курсов</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">{{ user.payments.count }}</div>
+                        <div>Приобретено курсов</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">{{ courses.count|mul:7 }}</div>
+                        <div>Дней обучения</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ваши курсы -->
+            {% if courses %}
+            <div class="digest-section">
+                <h3 style="margin-top: 0; color: #667eea;">🎓 Ваши курсы</h3>
+                {% for subscription in courses %}
+                <div class="course-card">
+                    <h4 style="margin-top: 0; color: #343a40;">{{ subscription.course.title }}</h4>
+                    <p style="color: #6c757d; margin-bottom: 10px;">
+                        {{ subscription.course.description|truncatewords:20 }}
+                    </p>
+                    <div style="font-size: 14px; color: #6c757d;">
+                        📅 Подписка: {{ subscription.created_at|date:"d.m.Y" }} |
+                        📚 Уроков: {{ subscription.course.lessons.count }}
+                    </div>
+                    <a href="{{ course_url }}{{ subscription.course.id }}/" class="cta-button" style="font-size: 14px; padding: 8px 15px;">
+                        Продолжить обучение
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Мотивационная секция -->
+            <div class="motivational-quote">
+                <h3 style="margin-top: 0;">💡 Мотивация недели</h3>
+                <p style="font-size: 18px; margin-bottom: 0;">
+                    "Образование - самое мощное оружие, которое можно использовать, чтобы изменить мир."
+                </p>
+                <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.8;">
+                    — Нельсон Мандела
+                </p>
+            </div>
+
+            <!-- Советы по обучению -->
+            <div class="digest-section">
+                <h3 style="margin-top: 0; color: #667eea;">💪 Советы для эффективного обучения</h3>
+                <ul style="color: #6c757d;">
+                    <li><strong>Составьте расписание:</strong> Выделяйте определенное время каждый день для обучения</li>
+                    <li><strong>Делайте заметки:</strong> Записывайте ключевые моменты для лучшего запоминания</li>
+                    <li><strong>Практикуйтесь:</strong> Применяйте полученные знания на практике</li>
+                    <li><strong>Не спешите:</strong> Лучше изучить меньше, но качественно</li>
+                </ul>
+            </div>
+
+            <!-- Призыв к действию -->
+            <div style="text-align: center; margin: 30px 0;">
+                <h3 style="color: #343a40;">🚀 Готовы продолжить обучение?</h3>
+                <a href="{{ course_url }}" class="cta-button">Перейти к курсам</a>
+                <a href="{{ course_url }}browse/" class="cta-button" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    Найти новые курсы
+                </a>
+            </div>
+
+            <!-- Статистика платформы -->
+            <div class="digest-section">
+                <h3 style="margin-top: 0; color: #667eea;">🌟 OnlineEdu в цифрах</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; text-align: center;">
+                    <div>
+                        <div style="font-size: 20px; font-weight: bold; color: #667eea;">1000+</div>
+                        <div style="font-size: 14px; color: #6c757d;">Студентов</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 20px; font-weight: bold; color: #667eea;">50+</div>
+                        <div style="font-size: 14px; color: #6c757d;">Курсов</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 20px; font-weight: bold; color: #667eea;">500+</div>
+                        <div style="font-size: 14px; color: #6c757d;">Уроков</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Подвал дайджеста -->
+        <div class="email-footer">
+            <h3 style="margin-top: 0; color: #ffffff;">OnlineEdu</h3>
+            <p style="margin: 0 0 15px 0; opacity: 0.8;">
+                Спасибо, что остаетесь с нами в образовательном путешествии!
+            </p>
+
+            <div style="margin: 20px 0;">
+                <a href="{{ course_url }}" style="color: #ffffff; text-decoration: none; margin: 0 10px;">🏠 Главная</a>
+                <a href="{{ course_url }}profile/" style="color: #ffffff; text-decoration: none; margin: 0 10px;">👤 Профиль</a>
+                <a href="{{ unsubscribe_url }}" style="color: #ffffff; text-decoration: none; margin: 0 10px;">✉️ Настройки email</a>
+            </div>
+
+            <p style="margin: 0; font-size: 12px; opacity: 0.6;">
+                Если вы больше не хотите получать еженедельные дайджесты,
+                <a href="{{ unsubscribe_url }}" style="color: #ffffff;">отпишитесь здесь</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

@@ -4,9 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7e79b749-a63e-4609-b1e0-2031ec674542" name="Changes" comment="create tasks for LMS">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-    </list>
+    <list default="true" id="7e79b749-a63e-4609-b1e0-2031ec674542" name="Changes" comment="refresh tasks" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -359,11 +357,26 @@
       <option name="project" value="LOCAL" />
       <updated>1752313512937</updated>
     </task>
-    <option name="localTasksCounter" value="37" />
+    <task id="LOCAL-00037" summary="fixes">
+      <option name="closed" value="true" />
+      <created>1752332394547</created>
+      <option name="number" value="00037" />
+      <option name="presentableId" value="LOCAL-00037" />
+      <option name="project" value="LOCAL" />
+      <updated>1752332394547</updated>
+    </task>
+    <task id="LOCAL-00038" summary="refresh tasks">
+      <option name="closed" value="true" />
+      <created>1752332512106</created>
+      <option name="number" value="00038" />
+      <option name="presentableId" value="LOCAL-00038" />
+      <option name="project" value="LOCAL" />
+      <updated>1752332512106</updated>
+    </task>
+    <option name="localTasksCounter" value="39" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="create views" />
     <MESSAGE value="create users" />
     <MESSAGE value="create urls for config" />
     <MESSAGE value="create admins" />
@@ -382,12 +395,13 @@
     <MESSAGE value="API-documentation with drf-spectacular" />
     <MESSAGE value="integration with Stripe" />
     <MESSAGE value="finish" />
-    <MESSAGE value="fixes" />
     <MESSAGE value="celery-beat" />
     <MESSAGE value="create celery in config" />
     <MESSAGE value="refresh django-settings" />
     <MESSAGE value="create tasks for users" />
     <MESSAGE value="create tasks for LMS" />
-    <option name="LAST_COMMIT_MESSAGE" value="create tasks for LMS" />
+    <MESSAGE value="fixes" />
+    <MESSAGE value="refresh tasks" />
+    <option name="LAST_COMMIT_MESSAGE" value="refresh tasks" />
   </component>
 </project>

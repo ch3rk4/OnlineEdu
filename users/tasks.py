@@ -261,3 +261,314 @@ def cleanup_old_celery_results(self):
     except Exception as e:
         logger.error(f"Ошибка при очистке результатов Celery: {e}")
         raise
+
+
+"""
+Дополнительные email задачи для завершения системы уведомлений
+
+Добавьте эти задачи в конец файла users/tasks.py
+"""
+
+
+@shared_task(bind=True, autoretry_for=(Exception,), retry_kwargs={'max_retries': 3, 'countdown': 60})
+def send_account_blocked_notification(self, user_id, days_inactive):
+    """
+    Отправляет уведомление пользователю о блокировке аккаунта
+
+    Параметры:
+    - user_id: ID заблокированного пользователя
+    - days_inactive: Количество дней неактивности
+    """
+    try:
+        user = User.objects.get(id=user_id)
+
+        # Тема письма
+        subject = f'Ваш аккаунт OnlineEdu временно заблокирован'
+
+        # Контекст для email шаблона
+        email_context = {
+            'user': user,
+            'days_inactive': days_inactive,
+            'reactivation_url': f"{settings.FRONTEND_URL}/reactivate",
+            'support_email': 'support@onlineedu.com',
+            'login_url': f"{settings.FRONTEND_URL}/login",
+        }
+
+        # Рендерим шаблоны
+        html_message = render_to_string('emails/account_blocked.html', email_context)
+        text_message = render_to_string('emails/account_blocked.txt', email_context)
+
+        # Отправляем уведомление
+        send_mail(
+            subject=subject,
+            message=text_message,
+            html_message=html_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=False,
+        )
+
+        logger.info(f"Уведомление о блокировке отправлено пользователю {user.email}")
+        return f"Уведомление о блокировке отправлено пользователю {user.email}"
+
+    except User.DoesNotExist:
+        logger.error(f"Пользователь с ID {user_id} не найден для уведомления о блокировке")
+        raise Exception(f"Пользователь с ID {user_id} не существует")
+
+    except Exception as e:
+        logger.error(f"Ошибка отправки уведомления о блокировке пользователю {user_id}: {str(e)}")
+        raise
+
+
+@shared_task(bind=True)
+def send_welcome_email(self, user_id):
+    """
+    Отправляет приветственное письмо новому пользователю
+
+    Эта задача может быть вызвана после регистрации пользователя
+    """
+    try:
+        user = User.objects.get(id=user_id)
+
+        subject = f'Добро пожаловать в OnlineEdu, {user.first_name or user.email}!'
+
+        email_context = {
+            'user': user,
+            'courses_url': f"{settings.FRONTEND_URL}/courses",
+            'profile_url': f"{settings.FRONTEND_URL}/profile",
+            'support_email': 'support@onlineedu.com',
+        }
+
+        html_message = render_to_string('emails/welcome.html', email_context)
+        text_message = render_to_string('emails/welcome.txt', email_context)
+
+        send_mail(
+            subject=subject,
+            message=text_message,
+            html_message=html_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=False,
+        )
+
+        logger.info(f"Приветственное письмо отправлено пользователю {user.email}")
+        return f"Приветственное письмо отправлено пользователю {user.email}"
+
+    except Exception as e:
+        logger.error(f"Ошибка отправки приветственного письма пользователю {user_id}: {e}")
+        raise
+
+
+@shared_task(bind=True)
+def send_password_reset_notification(self, user_id, reset_token):
+    """
+    Отправляет уведомление о сбросе пароля
+
+    Может быть интегрировано с системой восстановления паролей Django
+    """
+    try:
+        user = User.objects.get(id=user_id)
+
+        subject = 'Сброс пароля OnlineEdu'
+
+        email_context = {
+            'user': user,
+            'reset_url': f"{settings.FRONTEND_URL}/reset-password/{reset_token}",
+            'support_email': 'support@onlineedu.com',
+            'valid_hours': 24,  # Время действия токена
+        }
+
+        html_message = render_to_string('emails/password_reset.html', email_context)
+        text_message = render_to_string('emails/password_reset.txt', email_context)
+
+        send_mail(
+            subject=subject,
+            message=text_message,
+            html_message=html_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=False,
+        )
+
+        logger.info(f"Уведомление о сбросе пароля отправлено пользователю {user.email}")
+        return f"Уведомление о сбросе пароля отправлено пользователю {user.email}"
+
+    except Exception as e:
+        logger.error(f"Ошибка отправки уведомления о сбросе пароля пользователю {user_id}: {e}")
+        raise
+
+
+@shared_task(bind=True)
+def send_course_completion_certificate(self, user_id, course_id):
+    """
+    Отправляет сертификат о завершении курса
+
+    Может быть интегрировано с системой отслеживания прогресса
+    """
+    try:
+        user = User.objects.get(id=user_id)
+
+        # Импортируем модель курса здесь, чтобы избежать циклических импортов
+        from lms.models import Course
+        course = Course.objects.get(id=course_id)
+
+        subject = f'Сертификат завершения курса: {course.title}'
+
+        email_context = {
+            'user': user,
+            'course': course,
+            'completion_date': timezone.now(),
+            'certificate_url': f"{settings.FRONTEND_URL}/certificates/{course_id}",
+            'courses_url': f"{settings.FRONTEND_URL}/courses",
+        }
+
+        html_message = render_to_string('emails/course_completion.html', email_context)
+        text_message = render_to_string('emails/course_completion.txt', email_context)
+
+        send_mail(
+            subject=subject,
+            message=text_message,
+            html_message=html_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=False,
+        )
+
+        logger.info(f"Сертификат отправлен пользователю {user.email} за курс {course.title}")
+        return f"Сертификат отправлен пользователю {user.email}"
+
+    except Exception as e:
+        logger.error(f"Ошибка отправки сертификата пользователю {user_id} за курс {course_id}: {e}")
+        raise
+
+
+@shared_task(bind=True)
+def send_promotional_email(self, user_ids, subject, template_name, context_data=None):
+    """
+    Отправляет промо-письма группе пользователей
+
+    Параметры:
+    - user_ids: список ID пользователей
+    - subject: тема письма
+    - template_name: имя шаблона (без расширения)
+    - context_data: дополнительные данные для шаблона
+    """
+    try:
+        context_data = context_data or {}
+        sent_count = 0
+        failed_count = 0
+
+        for user_id in user_ids:
+            try:
+                user = User.objects.get(id=user_id, is_active=True)
+
+                # Базовый контекст для всех промо-писем
+                email_context = {
+                    'user': user,
+                    'unsubscribe_url': f"{settings.FRONTEND_URL}/unsubscribe",
+                    'courses_url': f"{settings.FRONTEND_URL}/courses",
+                    **context_data  # Добавляем дополнительные данные
+                }
+
+                html_message = render_to_string(f'emails/{template_name}.html', email_context)
+                text_message = render_to_string(f'emails/{template_name}.txt', email_context)
+
+                send_mail(
+                    subject=subject,
+                    message=text_message,
+                    html_message=html_message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email],
+                    fail_silently=False,
+                )
+
+                sent_count += 1
+
+                # Небольшая задержка между отправками для предотвращения блокировки SMTP
+                time.sleep(0.1)
+
+            except User.DoesNotExist:
+                logger.warning(f"Пользователь {user_id} не найден для промо-рассылки")
+                failed_count += 1
+            except Exception as e:
+                logger.error(f"Ошибка отправки промо-письма пользователю {user_id}: {e}")
+                failed_count += 1
+
+        logger.info(f"Промо-рассылка завершена: отправлено {sent_count}, ошибок {failed_count}")
+        return f"Отправлено {sent_count} писем, ошибок: {failed_count}"
+
+    except Exception as e:
+        logger.error(f"Ошибка промо-рассылки: {e}")
+        raise
+
+
+@shared_task(bind=True)
+def generate_user_activity_report(self):
+    """
+    Генерирует отчет об активности пользователей
+
+    Эта задача может запускаться еженедельно для анализа вовлеченности
+    """
+    try:
+        from django.db.models import Count, Q
+        from datetime import timedelta
+
+        now = timezone.now()
+        week_ago = now - timedelta(days=7)
+        month_ago = now - timedelta(days=30)
+
+        # Собираем статистику
+        stats = {
+            'total_users': User.objects.count(),
+            'active_users': User.objects.filter(is_active=True).count(),
+            'weekly_active': User.objects.filter(
+                last_login__gte=week_ago,
+                is_active=True
+            ).count(),
+            'monthly_active': User.objects.filter(
+                last_login__gte=month_ago,
+                is_active=True
+            ).count(),
+            'new_registrations_week': User.objects.filter(
+                date_joined__gte=week_ago
+            ).count(),
+        }
+
+        # Статистика по курсам
+        from lms.models import Course, Subscription
+
+        stats.update({
+            'total_courses': Course.objects.count(),
+            'total_subscriptions': Subscription.objects.filter(is_active=True).count(),
+            'new_subscriptions_week': Subscription.objects.filter(
+                created_at__gte=week_ago,
+                is_active=True
+            ).count(),
+        })
+
+        # Отправляем отчет администраторам
+        admin_users = User.objects.filter(is_superuser=True, is_active=True)
+
+        for admin in admin_users:
+            email_context = {
+                'admin': admin,
+                'stats': stats,
+                'report_date': now,
+                'period': 'weekly'
+            }
+
+            send_mail(
+                subject=f'Еженедельный отчет активности OnlineEdu - {now.strftime("%Y-%m-%d")}',
+                message=render_to_string('emails/activity_report.txt', email_context),
+                html_message=render_to_string('emails/activity_report.html', email_context),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[admin.email],
+                fail_silently=True,
+            )
+
+        logger.info(f"Отчет об активности сгенерирован и отправлен {admin_users.count()} администраторам")
+        return f"Отчет отправлен {admin_users.count()} администраторам: {stats}"
+
+    except Exception as e:
+        logger.error(f"Ошибка генерации отчета активности: {e}")
+        raise

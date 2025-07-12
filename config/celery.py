@@ -1,31 +1,42 @@
+"""
+Конфигурация Celery для проекта OnlineEdu
+
+Celery - это асинхронная очередь задач, которая позволяет выполнять
+тяжелые операции в фоне, не блокируя основное приложение.
+"""
 import os
 from celery import Celery
 from django.conf import settings
 
-# Устанавливаем переменную окружения для Django settings
+# Устанавливаем модуль настроек Django для Celery
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 
+# Создаем экземпляр Celery приложения
 app = Celery('onlineedu')
 
-# Используем настройки Django для Celery
+# Загружаем конфигурацию из настроек Django
+# Все настройки Celery должны начинаться с префикса CELERY_
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
-# Автоматическое обнаружение задач в приложениях Django
+# Автоматически обнаруживаем tasks.py в каждом приложении Django
 app.autodiscover_tasks()
 
-# Конфигурация для celery-beat (периодические задачи)
-app.conf.beat_schedule = {
-    'deactivate-inactive-users': {
-        'task': 'users.tasks.deactivate_inactive_users',
-        'schedule': 3600.0,  # Каждый час (можно настроить по потребности)
-        # 'schedule': crontab(hour=2, minute=0),  # Каждый день в 2:00
-    },
-}
-
-# Часовой пояс для задач
+# Настройки таймзоны - важно для celery-beat
 app.conf.timezone = settings.TIME_ZONE
 
-@app.task(bind=True, ignore_result=True)
+# Конфигурация для результатов задач (опционально)
+app.conf.update(
+    # Устанавливаем TTL для результатов задач (1 день)
+    result_expires=86400,
+    # Сжимаем результаты задач для экономии памяти
+    result_compression='gzip',
+    # Настройки для обработки ошибок
+    task_acks_late=True,
+    worker_prefetch_multiplier=1,
+)
+
+@app.task(bind=True)
 def debug_task(self):
-    """Отладочная задача для тестирования Celery"""
+    """Отладочная задача для проверки работы Celery"""
     print(f'Request: {self.request!r}')
+    return 'Celery работает корректно!'

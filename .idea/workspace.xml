@@ -4,7 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7e79b749-a63e-4609-b1e0-2031ec674542" name="Changes" comment="refresh django-settings" />
+    <list default="true" id="7e79b749-a63e-4609-b1e0-2031ec674542" name="Changes" comment="create tasks for LMS">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -341,12 +343,26 @@
       <option name="project" value="LOCAL" />
       <updated>1752313398247</updated>
     </task>
-    <option name="localTasksCounter" value="35" />
+    <task id="LOCAL-00035" summary="create tasks for users">
+      <option name="closed" value="true" />
+      <created>1752313477950</created>
+      <option name="number" value="00035" />
+      <option name="presentableId" value="LOCAL-00035" />
+      <option name="project" value="LOCAL" />
+      <updated>1752313477950</updated>
+    </task>
+    <task id="LOCAL-00036" summary="create tasks for LMS">
+      <option name="closed" value="true" />
+      <created>1752313512937</created>
+      <option name="number" value="00036" />
+      <option name="presentableId" value="LOCAL-00036" />
+      <option name="project" value="LOCAL" />
+      <updated>1752313512937</updated>
+    </task>
+    <option name="localTasksCounter" value="37" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="create models" />
-    <MESSAGE value="create serializers for course" />
     <MESSAGE value="create views" />
     <MESSAGE value="create users" />
     <MESSAGE value="create urls for config" />
@@ -370,6 +386,8 @@
     <MESSAGE value="celery-beat" />
     <MESSAGE value="create celery in config" />
     <MESSAGE value="refresh django-settings" />
-    <option name="LAST_COMMIT_MESSAGE" value="refresh django-settings" />
+    <MESSAGE value="create tasks for users" />
+    <MESSAGE value="create tasks for LMS" />
+    <option name="LAST_COMMIT_MESSAGE" value="create tasks for LMS" />
   </component>
 </project>

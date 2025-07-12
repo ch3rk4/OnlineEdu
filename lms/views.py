@@ -1,3 +1,4 @@
+from django.db.migrations import serializer
 from rest_framework import viewsets, generics, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -10,7 +11,8 @@ from .models import Course, Lesson, Subscription
 from .serializers import CourseListSerializer, CourseDetailSerializer, LessonSerializer
 from .paginators import CourseLessonPaginator
 from users.permissions import IsModeratorOrOwner
-
+from .tasks import process_course_update_notification, process_lesson_update_notification, logger
+import logging
 
 @extend_schema_view(
     list=extend_schema(
@@ -147,6 +149,152 @@ class CourseViewSet(viewsets.ModelViewSet):
         serializer = LessonSerializer(lessons, many=True, context={'request': request})
         return Response(serializer.data)
 
+    def perform_update(self, serializer):
+        """
+        Переопределяем метод обновления курса для запуска уведомлений
+
+        Этот метод вызывается Django REST Framework при PUT/PATCH запросах.
+        Мы перехватываем момент сохранения, чтобы запустить асинхронные уведомления.
+        """
+        # Сохраняем информацию о курсе до обновления
+        course = self.get_object()
+        old_title = course.title
+        old_description = course.description
+
+        # Выполняем стандартное обновление
+        updated_course = serializer.save()
+
+        # Определяем тип изменений для более точных уведомлений
+        changes = []
+        if old_title != updated_course.title:
+            changes.append('title')
+        if old_description != updated_course.description:
+            changes.append('description')
+
+        # Проверяем, нужно ли отправлять уведомления
+        can_notify, reason = updated_course.can_send_notification()
+
+        if can_notify:
+            # Запускаем асинхронную задачу уведомления
+            # .delay() означает "выполни эту задачу в фоне, не блокируя текущий запрос"
+            try:
+                process_course_update_notification.delay(
+                    course_id=updated_course.id,
+                    update_type='general'
+                )
+
+                logger.info(
+                    f"Запущена задача уведомления для курса {updated_course.title} "
+                    f"(изменения: {changes})"
+                )
+
+            except Exception as e:
+                # Если не удалось запустить задачу - логируем, но не прерываем основной процесс
+                logger.error(f"Ошибка запуска уведомления для курса {updated_course.id}: {e}")
+        else:
+            logger.info(f"Уведомление для курса {updated_course.title} пропущено: {reason}")
+
+    def perform_create(self, serializer):
+        """
+        Переопределяем создание курса
+
+        При создании нового курса обычно не отправляем уведомления,
+        но можно добавить логику для уведомления админов или аналитики.
+        """
+        # Стандартное создание с назначением владельца
+        course = serializer.save(owner=self.request.user)
+
+        # Опционально: уведомление админов о новом курсе
+        logger.info(f"Создан новый курс: {course.title} пользователем {self.request.user.email}")
+
+        # Можно добавить задачу для аналитики
+        # from .tasks import track_course_creation
+        # track_course_creation.delay(course.id, self.request.user.id)
+
+    @action(detail=True, methods=['post'])
+    def toggle_notifications(self, request, pk=None):
+        """
+        Кастомное действие для включения/отключения уведомлений курса
+
+        Позволяет владельцам курсов управлять уведомлениями через API:
+        POST /api/courses/{id}/toggle_notifications/
+        """
+        course = self.get_object()
+
+        # Переключаем статус уведомлений
+        course.notification_enabled = not course.notification_enabled
+        course.save(update_fields=['notification_enabled'])
+
+        status_text = "включены" if course.notification_enabled else "отключены"
+
+        return Response({
+            'message': f'Уведомления для курса "{course.title}" {status_text}',
+            'notification_enabled': course.notification_enabled,
+            'notification_stats': course.get_notification_stats()
+        })
+
+    @action(detail=True, methods=['get'])
+    def notification_stats(self, request, pk=None):
+        """
+        Получение статистики уведомлений для курса
+
+        GET /api/courses/{id}/notification_stats/
+        """
+        course = self.get_object()
+        stats = course.get_notification_stats()
+
+        return Response({
+            'course_id': course.id,
+            'course_title': course.title,
+            'stats': stats
+        })
+
+    @action(detail=True, methods=['post'])
+    def force_notification(self, request, pk=None):
+        """
+        Принудительная отправка уведомления (для владельцев и админов)
+
+        POST /api/courses/{id}/force_notification/
+        Полезно для тестирования или срочных обновлений
+        """
+        course = self.get_object()
+
+        # Проверяем права (только владелец или админ)
+        if course.owner != request.user and not request.user.is_superuser:
+            return Response(
+                {'error': 'Только владелец курса может принудительно отправить уведомление'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Запускаем уведомление независимо от временных ограничений
+        try:
+            from users.tasks import send_bulk_course_notifications
+
+            # Обновляем время последнего уведомления
+            from django.utils import timezone
+            course.last_notification_sent = timezone.now()
+            course.save(update_fields=['last_notification_sent'])
+
+            # Запускаем задачу
+            task = send_bulk_course_notifications.delay(
+                course_id=course.id,
+                course_title=course.title,
+                update_type='forced'
+            )
+
+            return Response({
+                'message': f'Принудительное уведомление запущено для курса "{course.title}"',
+                'task_id': task.id,
+                'subscriber_count': course.subscriptions.filter(is_active=True).count()
+            })
+
+        except Exception as e:
+            logger.error(f"Ошибка принудительного уведомления для курса {course.id}: {e}")
+            return Response(
+                {'error': f'Ошибка запуска уведомления: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
 
 @extend_schema_view(
     get=extend_schema(
@@ -223,6 +371,34 @@ class LessonListCreateView(generics.ListCreateAPIView):
         """Автоматически устанавливаем текущего пользователя как владельца урока"""
         serializer.save(owner=self.request.user)
 
+    def perform_create(self, serializer):
+    """
+    Переопределяем создание урока для уведомлений о новом контенте
+    """
+    # Стандартное создание урока
+    lesson = serializer.save(owner=self.request.user)
+
+    # Уведомляем подписчиков о новом уроке
+    course = lesson.course
+    can_notify, reason = course.can_send_notification()
+
+    if can_notify:
+        try:
+            process_lesson_update_notification.delay(
+                lesson_id=lesson.id,
+                update_type='new_lesson'
+            )
+
+            logger.info(
+                f"Запущена задача уведомления о новом уроке {lesson.title} "
+                f"в курсе {course.title}"
+            )
+
+        except Exception as e:
+            logger.error(f"Ошибка запуска уведомления о новом уроке {lesson.id}: {e}")
+    else:
+        logger.info(f"Уведомление о новом уроке {lesson.title} пропущено: {reason}")
+
 
 @extend_schema_view(
     get=extend_schema(
@@ -277,6 +453,57 @@ class LessonRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
             return Lesson.objects.select_related('course', 'owner')
         else:
             return Lesson.objects.filter(owner=self.request.user).select_related('course', 'owner')
+
+    def perform_update(self, serializer):
+        """
+        Переопределяем обновление урока для запуска уведомлений
+
+        Логика похожа на курсы, но учитываем, что урок является частью курса.
+        """
+        # Получаем урок до изменений
+        lesson = self.get_object()
+        old_title = lesson.title
+        old_description = lesson.description
+        old_video_url = lesson.video_url
+
+        # Выполняем обновление
+        updated_lesson = serializer.save()
+
+        # Определяем значимость изменений
+        significant_changes = []
+        if old_title != updated_lesson.title:
+            significant_changes.append('title')
+        if old_video_url != updated_lesson.video_url:
+            significant_changes.append('video')  # Смена видео - важное изменение
+        if old_description != updated_lesson.description:
+            significant_changes.append('description')
+
+        # Если есть значимые изменения - отправляем уведомления
+        if significant_changes:
+            course = updated_lesson.course
+            can_notify, reason = course.can_send_notification()
+
+            if can_notify:
+                try:
+                    # Запускаем уведомление об обновлении урока
+                    process_lesson_update_notification.delay(
+                        lesson_id=updated_lesson.id,
+                        update_type='lesson_updated'
+                    )
+
+                    logger.info(
+                        f"Запущена задача уведомления об обновлении урока {updated_lesson.title} "
+                        f"в курсе {course.title} (изменения: {significant_changes})"
+                    )
+
+                except Exception as e:
+                    logger.error(f"Ошибка запуска уведомления для урока {updated_lesson.id}: {e}")
+            else:
+                logger.info(
+                    f"Уведомление об уроке {updated_lesson.title} пропущено: {reason}"
+                )
+        else:
+            logger.info(f"Незначимые изменения урока {updated_lesson.title} - уведомления не отправляем")
 
 
 @extend_schema_view(

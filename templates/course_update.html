@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Обновление курса - OnlineEdu</title>
+    <!--
+    Важно: email клиенты имеют ограниченную поддержку CSS.
+    Используем inline стили и таблицы для максимальной совместимости.
+    -->
+    <style>
+        /* Общие стили для email */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: #f4f4f4;
+            line-height: 1.6;
+        }
+
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .email-header {
+            background-color: #2c3e50;
+            color: #ffffff;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .email-body {
+            padding: 30px;
+        }
+
+        .email-footer {
+            background-color: #ecf0f1;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .update-type-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .update-general { background-color: #3498db; color: white; }
+        .update-new-lesson { background-color: #2ecc71; color: white; }
+        .update-lesson-updated { background-color: #f39c12; color: white; }
+
+        .cta-button {
+            display: inline-block;
+            padding: 12px 30px;
+            background-color: #e74c3c;
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .cta-button:hover {
+            background-color: #c0392b;
+        }
+
+        .course-info {
+            background-color: #ecf0f1;
+            padding: 15px;
+            border-left: 4px solid #3498db;
+            margin: 15px 0;
+        }
+
+        /* Адаптивность для мобильных устройств */
+        @media only screen and (max-width: 600px) {
+            .email-container {
+                width: 100% !important;
+            }
+
+            .email-body {
+                padding: 20px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Заголовок письма -->
+        <div class="email-header">
+            <h1 style="margin: 0; font-size: 24px;">OnlineEdu</h1>
+            <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.9;">
+                Образовательная платформа
+            </p>
+        </div>
+
+        <!-- Основное содержимое -->
+        <div class="email-body">
+            <!-- Бейдж типа обновления -->
+            {% if update_type == 'new_lesson' %}
+                <span class="update-type-badge update-new-lesson">НОВЫЙ УРОК</span>
+            {% elif update_type == 'lesson_updated' %}
+                <span class="update-type-badge update-lesson-updated">УРОК ОБНОВЛЕН</span>
+            {% else %}
+                <span class="update-type-badge update-general">ОБНОВЛЕНИЕ КУРСА</span>
+            {% endif %}
+
+            <!-- Персонализированное приветствие -->
+            <h2 style="color: #2c3e50; margin-top: 0;">
+                Привет, {{ user.first_name|default:user.email }}!
+            </h2>
+
+            <!-- Основное сообщение -->
+            {% if update_type == 'new_lesson' %}
+                <p>У нас отличные новости! В курсе <strong>"{{ course_title }}"</strong> появился новый урок.</p>
+                <p>Не упустите возможность продолжить обучение и изучить новый материал.</p>
+            {% elif update_type == 'lesson_updated' %}
+                <p>В курсе <strong>"{{ course_title }}"</strong> был обновлен один из уроков.</p>
+                <p>Мы улучшили содержимое, чтобы сделать ваше обучение еще более эффективным.</p>
+            {% else %}
+                <p>В курсе <strong>"{{ course_title }}"</strong> появились обновления!</p>
+                <p>Мы постоянно работаем над улучшением наших курсов, чтобы предоставить вам самую актуальную и качественную информацию.</p>
+            {% endif %}
+
+            <!-- Информационный блок о курсе -->
+            <div class="course-info">
+                <h3 style="margin-top: 0; color: #2c3e50;">{{ course_title }}</h3>
+                <p style="margin-bottom: 0;">
+                    {% if update_type == 'new_lesson' %}
+                        Новый контент уже доступен для изучения.
+                    {% elif update_type == 'lesson_updated' %}
+                        Обновленные материалы ждут вас.
+                    {% else %}
+                        Свежие обновления готовы для изучения.
+                    {% endif %}
+                </p>
+            </div>
+
+            <!-- Призыв к действию -->
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{ course_url }}" class="cta-button">
+                    {% if update_type == 'new_lesson' %}
+                        Изучить новый урок
+                    {% else %}
+                        Перейти к курсу
+                    {% endif %}
+                </a>
+            </div>
+
+            <!-- Дополнительная информация -->
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                <h4 style="margin-top: 0; color: #495057;">💡 Совет:</h4>
+                <p style="margin-bottom: 0; font-size: 14px;">
+                    Регулярное обучение - ключ к успеху. Даже 15 минут в день могут принести значительный прогресс!
+                </p>
+            </div>
+
+            <!-- Социальная мотивация -->
+            <p style="font-size: 14px; color: #6c757d;">
+                Вы один из наших ценных студентов, и мы рады видеть ваш прогресс в обучении.
+                Продолжайте в том же духе!
+            </p>
+        </div>
+
+        <!-- Подвал письма -->
+        <div class="email-footer">
+            <p style="margin: 0 0 10px 0;">
+                <strong>OnlineEdu</strong> - Образование будущего уже сегодня
+            </p>
+
+            <p style="margin: 0 0 10px 0;">
+                Это письмо отправлено потому, что вы подписаны на обновления курса "{{ course_title }}".
+            </p>
+
+            <!-- Ссылки управления подпиской -->
+            <p style="margin: 0;">
+                <a href="{{ course_url }}" style="color: #3498db; text-decoration: none;">Перейти к курсу</a> |
+                <a href="{{ unsubscribe_url }}" style="color: #e74c3c; text-decoration: none;">Отписаться от уведомлений</a>
+            </p>
+
+            <!-- Контактная информация -->
+            <p style="margin: 15px 0 0 0; font-size: 11px;">
+                Если у вас есть вопросы, свяжитесь с нами: support@onlineedu.com
+            </p>
+        </div>
+    </div>
+</body>
+</html>

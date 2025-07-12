@@ -1,160 +1,274 @@
+"""
+Асинхронные задачи для приложения LMS
+
+Эти задачи обрабатывают логику уведомлений при обновлении курсов.
+Ключевая особенность - мы проверяем, не было ли курс обновлен недавно,
+чтобы избежать спама уведомлений.
+"""
+
 from celery import shared_task
 from django.utils import timezone
 from datetime import timedelta
 import logging
 
-from .models import Course, Subscription
-from users.tasks import send_bulk_course_notifications
-
 logger = logging.getLogger(__name__)
 
 
-@shared_task(bind=True, ignore_result=True)
-def notify_course_subscribers(self, course_id):
+@shared_task(bind=True)
+def process_course_update_notification(self, course_id, update_type='general'):
     """
-    Уведомление подписчиков о обновлении курса
+    Обрабатывает уведомления об обновлении курса с проверкой временных интервалов
 
-    Проверяет что курс не обновлялся последние 4 часа,
-    чтобы не спамить пользователей при множественных обновлениях
+    Это центральная задача, которая решает:
+    1. Нужно ли отправлять уведомления (прошло ли 4 часа с последнего)
+    2. Какой тип уведомления отправить
+    3. Обновление времени последнего уведомления
 
-    Args:
-        course_id (int): ID обновленного курса
+    Параметры:
+    - course_id: ID обновленного курса
+    - update_type: тип обновления ('general', 'new_lesson', 'lesson_updated')
     """
     try:
-        # Получаем курс
-        try:
-            course = Course.objects.get(id=course_id)
-        except Course.DoesNotExist:
-            logger.error(f'Курс с ID {course_id} не найден')
-            return f'Курс с ID {course_id} не найден'
+        from .models import Course
+        from users.tasks import send_bulk_course_notifications
 
-        # Проверяем что курс не обновлялся последние 4 часа
-        four_hours_ago = timezone.now() - timedelta(hours=4)
+        # Получаем курс из базы данных
+        course = Course.objects.get(id=course_id)
 
-        # Если курс обновлялся менее 4 часов назад, пропускаем уведомление
-        if course.updated_at > four_hours_ago:
-            logger.info(
-                f'Курс "{course.title}" обновлялся менее 4 часов назад. '
-                f'Уведомления не отправляются.'
-            )
-            return f'Курс обновлялся недавно, уведомления пропущены'
+        # Проверяем, прошло ли достаточно времени с последнего уведомления
+        now = timezone.now()
+        four_hours_ago = now - timedelta(hours=4)
 
-        # Получаем активные подписки на курс
-        active_subscriptions = Subscription.objects.filter(
-            course=course,
-            is_active=True
-        ).select_related('user')
+        # Если у курса есть поле last_notification_sent и оно свежее 4 часов - не отправляем
+        if hasattr(course, 'last_notification_sent') and course.last_notification_sent:
+            if course.last_notification_sent > four_hours_ago:
+                time_remaining = course.last_notification_sent + timedelta(hours=4) - now
+                logger.info(
+                    f"Уведомление для курса {course.title} пропущено. "
+                    f"Следующее уведомление возможно через {time_remaining}"
+                )
+                return f"Уведомление пропущено - слишком рано (осталось {time_remaining})"
 
-        if not active_subscriptions.exists():
-            logger.info(f'Нет активных подписок на курс "{course.title}"')
-            return 'Нет активных подписок'
+        # Проверяем есть ли подписчики у курса
+        subscription_count = course.subscriptions.filter(is_active=True).count()
 
-        # Собираем email'ы подписчиков
-        subscriber_emails = [
-            subscription.user.email
-            for subscription in active_subscriptions
-            if subscription.user.is_active and subscription.user.email
-        ]
+        if subscription_count == 0:
+            logger.info(f"У курса {course.title} нет активных подписчиков")
+            return "Нет подписчиков для уведомления"
 
-        if not subscriber_emails:
-            logger.info(f'Нет активных пользователей с email для курса "{course.title}"')
-            return 'Нет активных пользователей с email'
-
-        # Запускаем массовую отправку уведомлений
+        # Запускаем массовую рассылку уведомлений
         send_bulk_course_notifications.delay(
             course_id=course.id,
             course_title=course.title,
-            subscriber_emails=subscriber_emails
+            update_type=update_type
         )
+
+        # Обновляем время последнего уведомления
+        if hasattr(course, 'last_notification_sent'):
+            course.last_notification_sent = now
+            course.save(update_fields=['last_notification_sent'])
 
         logger.info(
-            f'Запущена отправка уведомлений для {len(subscriber_emails)} '
-            f'подписчиков курса "{course.title}"'
+            f"Запущена рассылка уведомлений для {subscription_count} подписчиков курса {course.title}"
         )
 
-        return f'Запущена отправка уведомлений для {len(subscriber_emails)} подписчиков'
+        return f"Уведомления отправлены {subscription_count} подписчикам курса {course.title}"
 
     except Exception as e:
-        logger.error(f'Ошибка при уведомлении подписчиков курса {course_id}: {str(e)}')
-        raise self.retry(exc=e, countdown=60, max_retries=3)
+        logger.error(f"Ошибка при обработке уведомления для курса {course_id}: {e}")
+        raise
 
 
-@shared_task(bind=True, ignore_result=True)
-def notify_lesson_update(self, lesson_id):
+@shared_task(bind=True)
+def process_lesson_update_notification(self, lesson_id, update_type='lesson_updated'):
     """
-    Уведомление подписчиков при обновлении урока
+    Обрабатывает уведомления об обновлении урока
 
-    Args:
-        lesson_id (int): ID обновленного урока
+    Урок является частью курса, поэтому мы:
+    1. Получаем урок и его курс
+    2. Проверяем временные ограничения на уровне курса
+    3. Отправляем уведомления подписчикам курса
     """
     try:
         from .models import Lesson
 
-        try:
-            lesson = Lesson.objects.select_related('course').get(id=lesson_id)
-        except Lesson.DoesNotExist:
-            logger.error(f'Урок с ID {lesson_id} не найден')
-            return f'Урок с ID {lesson_id} не найден'
+        # Получаем урок и связанный курс
+        lesson = Lesson.objects.select_related('course').get(id=lesson_id)
+        course = lesson.course
 
-        # Уведомляем подписчиков курса об обновлении урока
-        # Используем ту же логику проверки времени
-        return notify_course_subscribers.delay(lesson.course.id)
+        # Используем существующую логику для курса
+        # Это обеспечивает единообразную обработку временных ограничений
+        return process_course_update_notification.delay(
+            course_id=course.id,
+            update_type=update_type
+        )
 
     except Exception as e:
-        logger.error(f'Ошибка при уведомлении об обновлении урока {lesson_id}: {str(e)}')
-        raise self.retry(exc=e, countdown=60, max_retries=3)
+        logger.error(f"Ошибка при обработке уведомления для урока {lesson_id}: {e}")
+        raise
 
 
-@shared_task(bind=True, ignore_result=True)
-def cleanup_old_subscriptions(self):
+@shared_task(bind=True)
+def cleanup_old_data(self):
     """
-    Периодическая задача для очистки старых неактивных подписок
-    (можно запускать раз в неделю)
+    Периодическая очистка старых данных в системе
+
+    Эта задача помогает поддерживать производительность системы,
+    удаляя или архивируя устаревшие данные.
     """
     try:
-        # Удаляем неактивные подписки старше 6 месяцев
+        from .models import Subscription
+        from users.models import Payment
+
+        cleanup_results = {}
+
+        # 1. Деактивируем очень старые подписки без активности
         six_months_ago = timezone.now() - timedelta(days=180)
 
         old_subscriptions = Subscription.objects.filter(
-            is_active=False,
-            created_at__lt=six_months_ago
+            created_at__lt=six_months_ago,
+            is_active=True,
+            # Дополнительные условия можно добавить
         )
 
-        deleted_count = old_subscriptions.count()
-        old_subscriptions.delete()
+        deactivated_subscriptions = old_subscriptions.update(is_active=False)
+        cleanup_results['deactivated_subscriptions'] = deactivated_subscriptions
 
-        logger.info(f'Удалено {deleted_count} старых неактивных подписок')
-        return f'Удалено {deleted_count} старых подписок'
+        # 2. Можно добавить другие операции очистки
+        # Например, удаление неиспользуемых файлов медиа
+
+        logger.info(f"Очистка данных завершена: {cleanup_results}")
+        return f"Очистка завершена: {cleanup_results}"
 
     except Exception as e:
-        logger.error(f'Ошибка при очистке подписок: {str(e)}')
-        raise self.retry(exc=e, countdown=300, max_retries=2)
+        logger.error(f"Ошибка при очистке данных: {e}")
+        raise
 
 
-@shared_task(bind=True, ignore_result=True)
-def update_course_statistics(self):
+@shared_task(bind=True)
+def generate_course_statistics(self, course_id):
     """
-    Периодическая задача для обновления статистики курсов
-    (можно запускать раз в день)
+    Генерирует статистику по курсу
+
+    Эта задача может выполняться периодически или по запросу
+    для создания отчетов о популярности курсов, активности студентов и т.д.
     """
     try:
-        from django.db.models import Count
+        from .models import Course
+        from users.models import Payment
 
-        # Обновляем количество подписчиков для каждого курса
-        courses = Course.objects.annotate(
-            subscribers_count=Count('subscriptions', filter={'subscriptions__is_active': True})
-        )
+        course = Course.objects.get(id=course_id)
 
-        updated_count = 0
-        for course in courses:
-            # Можно добавить поле subscribers_count в модель Course для кеширования
-            # course.subscribers_count = course.subscribers_count
-            # course.save(update_fields=['subscribers_count'])
-            updated_count += 1
+        # Собираем статистику
+        stats = {
+            'course_id': course_id,
+            'course_title': course.title,
+            'generated_at': timezone.now().isoformat(),
+            'total_lessons': course.lessons.count(),
+            'active_subscriptions': course.subscriptions.filter(is_active=True).count(),
+            'total_subscriptions': course.subscriptions.count(),
+            'payments_count': Payment.objects.filter(course=course).count(),
+            'completed_payments': Payment.objects.filter(
+                course=course,
+                status='completed'
+            ).count(),
+        }
 
-        logger.info(f'Обновлена статистика для {updated_count} курсов')
-        return f'Обновлена статистика для {updated_count} курсов'
+        # Можно сохранить статистику в БД или отправить в аналитическую систему
+        logger.info(f"Статистика для курса {course.title}: {stats}")
+
+        return stats
 
     except Exception as e:
-        logger.error(f'Ошибка при обновлении статистики: {str(e)}')
-        return f'Ошибка: {str(e)}'
+        logger.error(f"Ошибка при генерации статистики для курса {course_id}: {e}")
+        raise
+
+
+@shared_task(bind=True)
+def send_weekly_digest(self):
+    """
+    Еженедельная рассылка дайджеста активности
+
+    Отправляет пользователям сводку по их курсам:
+    - Новые уроки в подписанных курсах
+    - Рекомендации похожих курсов
+    - Статистика обучения
+    """
+    try:
+        from .models import Subscription
+        from users.models import User
+        from users.tasks import send_course_update_notification
+
+        # Получаем пользователей с активными подписками
+        active_subscribers = User.objects.filter(
+            subscriptions__is_active=True,
+            is_active=True
+        ).distinct()
+
+        digest_sent_count = 0
+
+        for user in active_subscribers:
+            # Для каждого пользователя собираем информацию о его курсах
+            user_subscriptions = user.subscriptions.filter(is_active=True).select_related('course')
+
+            if user_subscriptions.exists():
+                # Запускаем отдельную задачу для генерации и отправки дайджеста
+                send_user_weekly_digest.delay(user.id)
+                digest_sent_count += 1
+
+        logger.info(f"Запущена генерация еженедельного дайджеста для {digest_sent_count} пользователей")
+        return f"Дайджест запущен для {digest_sent_count} пользователей"
+
+    except Exception as e:
+        logger.error(f"Ошибка при отправке еженедельного дайджеста: {e}")
+        raise
+
+
+@shared_task(bind=True)
+def send_user_weekly_digest(self, user_id):
+    """
+    Генерирует и отправляет персональный еженедельный дайджест пользователю
+    """
+    try:
+        from users.models import User
+        from django.core.mail import send_mail
+        from django.template.loader import render_to_string
+        from django.conf import settings
+
+        user = User.objects.get(id=user_id)
+
+        # Собираем данные для дайджеста
+        user_courses = user.subscriptions.filter(is_active=True).select_related('course')
+
+        # Можно добавить логику для:
+        # - Новых уроков за неделю
+        # - Рекомендаций
+        # - Статистики прогресса
+
+        digest_context = {
+            'user': user,
+            'courses': user_courses,
+            'week_start': timezone.now() - timedelta(days=7),
+            'unsubscribe_url': f"{settings.FRONTEND_URL}/unsubscribe/digest",
+        }
+
+        # Рендерим и отправляем дайджест
+        subject = f"Ваш еженедельный дайджест обучения"
+        html_message = render_to_string('emails/weekly_digest.html', digest_context)
+        text_message = render_to_string('emails/weekly_digest.txt', digest_context)
+
+        send_mail(
+            subject=subject,
+            message=text_message,
+            html_message=html_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=False,
+        )
+
+        logger.info(f"Еженедельный дайджест отправлен пользователю {user.email}")
+        return f"Дайджест отправлен пользователю {user.email}"
+
+    except Exception as e:
+        logger.error(f"Ошибка при отправке дайджеста пользователю {user_id}: {e}")
+        raise

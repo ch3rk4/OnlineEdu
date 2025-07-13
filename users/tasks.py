@@ -8,6 +8,8 @@ Celery позволяет выполнять тяжелые операции в 
 - Операций с внешними API
 """
 
+import time
+import logging
 from celery import shared_task
 from django.core.mail import send_mail
 from django.conf import settings
@@ -15,7 +17,6 @@ from django.utils import timezone
 from django.template.loader import render_to_string
 from django.contrib.auth import get_user_model
 from datetime import timedelta
-import logging
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -60,8 +61,27 @@ def send_course_update_notification(self, user_id, course_title, course_id, upda
         }
 
         # Рендерим HTML и текстовую версию письма
-        html_message = render_to_string('emails/course_update.html', email_context)
-        text_message = render_to_string('emails/course_update.txt', email_context)
+        try:
+            html_message = render_to_string('emails/course_update.html', email_context)
+            text_message = render_to_string('emails/course_update.txt', email_context)
+        except Exception as template_error:
+            # Если шаблоны не найдены, используем простое сообщение
+            logger.warning(f"Шаблоны email не найдены, используем простое сообщение: {template_error}")
+            html_message = f"""
+            <h2>Обновление курса: {course_title}</h2>
+            <p>Привет, {user.first_name or user.email}!</p>
+            <p>В курсе "{course_title}" появились обновления.</p>
+            <p><a href="{settings.FRONTEND_URL}/courses/{course_id}">Перейти к курсу</a></p>
+            """
+            text_message = f"""
+            Обновление курса: {course_title}
+            
+            Привет, {user.first_name or user.email}!
+            
+            В курсе "{course_title}" появились обновления.
+            
+            Перейти к курсу: {settings.FRONTEND_URL}/courses/{course_id}
+            """
 
         # Отправляем письмо
         send_mail(
@@ -155,10 +175,12 @@ def block_inactive_users(self):
         # 1. Активны (is_active=True)
         # 2. Не заходили более месяца (last_login меньше месяца назад)
         # 3. Имеют запись о входе (last_login не равен None)
+        # 4. Не являются суперпользователями (для безопасности)
         inactive_users = User.objects.filter(
             is_active=True,
             last_login__lt=one_month_ago,
-            last_login__isnull=False  # Исключаем пользователей, которые никогда не заходили
+            last_login__isnull=False,
+            is_superuser=False  # Не блокируем суперпользователей
         )
 
         # Считаем количество пользователей для блокировки
@@ -168,11 +190,11 @@ def block_inactive_users(self):
             logger.info("Неактивных пользователей для блокировки не найдено")
             return "Неактивных пользователей не найдено"
 
-        # Блокируем пользователей (массовое обновление - эффективнее чем по одному)
-        blocked_count = inactive_users.update(is_active=False)
-
         # Получаем список email заблокированных пользователей для логирования
         blocked_emails = list(inactive_users.values_list('email', flat=True))
+
+        # Блокируем пользователей (массовое обновление - эффективнее чем по одному)
+        blocked_count = inactive_users.update(is_active=False)
 
         logger.info(f"Заблокировано {blocked_count} неактивных пользователей: {blocked_emails}")
 
@@ -263,13 +285,6 @@ def cleanup_old_celery_results(self):
         raise
 
 
-"""
-Дополнительные email задачи для завершения системы уведомлений
-
-Добавьте эти задачи в конец файла users/tasks.py
-"""
-
-
 @shared_task(bind=True, autoretry_for=(Exception,), retry_kwargs={'max_retries': 3, 'countdown': 60})
 def send_account_blocked_notification(self, user_id, days_inactive):
     """
@@ -295,8 +310,26 @@ def send_account_blocked_notification(self, user_id, days_inactive):
         }
 
         # Рендерим шаблоны
-        html_message = render_to_string('emails/account_blocked.html', email_context)
-        text_message = render_to_string('emails/account_blocked.txt', email_context)
+        try:
+            html_message = render_to_string('emails/account_blocked.html', email_context)
+            text_message = render_to_string('emails/account_blocked.txt', email_context)
+        except Exception:
+            # Fallback если шаблоны не найдены
+            html_message = f"""
+            <h2>Ваш аккаунт временно заблокирован</h2>
+            <p>Привет, {user.first_name or user.email}!</p>
+            <p>Ваш аккаунт был заблокирован из-за неактивности ({days_inactive} дней).</p>
+            <p>Для восстановления доступа свяжитесь с поддержкой: support@onlineedu.com</p>
+            """
+            text_message = f"""
+            Ваш аккаунт OnlineEdu временно заблокирован
+            
+            Привет, {user.first_name or user.email}!
+            
+            Ваш аккаунт был заблокирован из-за неактивности ({days_inactive} дней).
+            
+            Для восстановления доступа свяжитесь с поддержкой: support@onlineedu.com
+            """
 
         # Отправляем уведомление
         send_mail(
@@ -339,8 +372,26 @@ def send_welcome_email(self, user_id):
             'support_email': 'support@onlineedu.com',
         }
 
-        html_message = render_to_string('emails/welcome.html', email_context)
-        text_message = render_to_string('emails/welcome.txt', email_context)
+        try:
+            html_message = render_to_string('emails/welcome.html', email_context)
+            text_message = render_to_string('emails/welcome.txt', email_context)
+        except Exception:
+            # Fallback если шаблоны не найдены
+            html_message = f"""
+            <h2>Добро пожаловать в OnlineEdu!</h2>
+            <p>Привет, {user.first_name or user.email}!</p>
+            <p>Спасибо за регистрацию на нашей образовательной платформе.</p>
+            <p><a href="{settings.FRONTEND_URL}/courses">Перейти к курсам</a></p>
+            """
+            text_message = f"""
+            Добро пожаловать в OnlineEdu!
+            
+            Привет, {user.first_name or user.email}!
+            
+            Спасибо за регистрацию на нашей образовательной платформе.
+            
+            Перейти к курсам: {settings.FRONTEND_URL}/courses
+            """
 
         send_mail(
             subject=subject,
@@ -356,89 +407,6 @@ def send_welcome_email(self, user_id):
 
     except Exception as e:
         logger.error(f"Ошибка отправки приветственного письма пользователю {user_id}: {e}")
-        raise
-
-
-@shared_task(bind=True)
-def send_password_reset_notification(self, user_id, reset_token):
-    """
-    Отправляет уведомление о сбросе пароля
-
-    Может быть интегрировано с системой восстановления паролей Django
-    """
-    try:
-        user = User.objects.get(id=user_id)
-
-        subject = 'Сброс пароля OnlineEdu'
-
-        email_context = {
-            'user': user,
-            'reset_url': f"{settings.FRONTEND_URL}/reset-password/{reset_token}",
-            'support_email': 'support@onlineedu.com',
-            'valid_hours': 24,  # Время действия токена
-        }
-
-        html_message = render_to_string('emails/password_reset.html', email_context)
-        text_message = render_to_string('emails/password_reset.txt', email_context)
-
-        send_mail(
-            subject=subject,
-            message=text_message,
-            html_message=html_message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            fail_silently=False,
-        )
-
-        logger.info(f"Уведомление о сбросе пароля отправлено пользователю {user.email}")
-        return f"Уведомление о сбросе пароля отправлено пользователю {user.email}"
-
-    except Exception as e:
-        logger.error(f"Ошибка отправки уведомления о сбросе пароля пользователю {user_id}: {e}")
-        raise
-
-
-@shared_task(bind=True)
-def send_course_completion_certificate(self, user_id, course_id):
-    """
-    Отправляет сертификат о завершении курса
-
-    Может быть интегрировано с системой отслеживания прогресса
-    """
-    try:
-        user = User.objects.get(id=user_id)
-
-        # Импортируем модель курса здесь, чтобы избежать циклических импортов
-        from lms.models import Course
-        course = Course.objects.get(id=course_id)
-
-        subject = f'Сертификат завершения курса: {course.title}'
-
-        email_context = {
-            'user': user,
-            'course': course,
-            'completion_date': timezone.now(),
-            'certificate_url': f"{settings.FRONTEND_URL}/certificates/{course_id}",
-            'courses_url': f"{settings.FRONTEND_URL}/courses",
-        }
-
-        html_message = render_to_string('emails/course_completion.html', email_context)
-        text_message = render_to_string('emails/course_completion.txt', email_context)
-
-        send_mail(
-            subject=subject,
-            message=text_message,
-            html_message=html_message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            fail_silently=False,
-        )
-
-        logger.info(f"Сертификат отправлен пользователю {user.email} за курс {course.title}")
-        return f"Сертификат отправлен пользователю {user.email}"
-
-    except Exception as e:
-        logger.error(f"Ошибка отправки сертификата пользователю {user_id} за курс {course_id}: {e}")
         raise
 
 
@@ -470,8 +438,26 @@ def send_promotional_email(self, user_ids, subject, template_name, context_data=
                     **context_data  # Добавляем дополнительные данные
                 }
 
-                html_message = render_to_string(f'emails/{template_name}.html', email_context)
-                text_message = render_to_string(f'emails/{template_name}.txt', email_context)
+                try:
+                    html_message = render_to_string(f'emails/{template_name}.html', email_context)
+                    text_message = render_to_string(f'emails/{template_name}.txt', email_context)
+                except Exception:
+                    # Fallback если шаблоны не найдены
+                    html_message = f"""
+                    <h2>{subject}</h2>
+                    <p>Привет, {user.first_name or user.email}!</p>
+                    <p>У нас есть интересные новости для вас!</p>
+                    <p><a href="{settings.FRONTEND_URL}/courses">Перейти к курсам</a></p>
+                    """
+                    text_message = f"""
+                    {subject}
+                    
+                    Привет, {user.first_name or user.email}!
+                    
+                    У нас есть интересные новости для вас!
+                    
+                    Перейти к курсам: {settings.FRONTEND_URL}/courses
+                    """
 
                 send_mail(
                     subject=subject,
@@ -510,8 +496,9 @@ def generate_user_activity_report(self):
     Эта задача может запускаться еженедельно для анализа вовлеченности
     """
     try:
-        from django.db.models import Count, Q
-        from datetime import timedelta
+        from django.db.models import Count
+        from lms.models import Course, Subscription
+        from users.models import Payment
 
         now = timezone.now()
         week_ago = now - timedelta(days=7)
@@ -535,8 +522,6 @@ def generate_user_activity_report(self):
         }
 
         # Статистика по курсам
-        from lms.models import Course, Subscription
-
         stats.update({
             'total_courses': Course.objects.count(),
             'total_subscriptions': Subscription.objects.filter(is_active=True).count(),
@@ -550,17 +535,29 @@ def generate_user_activity_report(self):
         admin_users = User.objects.filter(is_superuser=True, is_active=True)
 
         for admin in admin_users:
-            email_context = {
-                'admin': admin,
-                'stats': stats,
-                'report_date': now,
-                'period': 'weekly'
-            }
+            # Простое текстовое сообщение если шаблонов нет
+            subject = f'Еженедельный отчет активности OnlineEdu - {now.strftime("%Y-%m-%d")}'
+            message = f"""
+            Еженедельный отчет активности OnlineEdu
+            
+            Дата отчета: {now.strftime('%Y-%m-%d %H:%M')}
+            
+            ПОЛЬЗОВАТЕЛИ:
+            - Всего пользователей: {stats['total_users']}
+            - Активных пользователей: {stats['active_users']}
+            - Активных за неделю: {stats['weekly_active']}
+            - Активных за месяц: {stats['monthly_active']}
+            - Новых регистраций за неделю: {stats['new_registrations_week']}
+            
+            КУРСЫ:
+            - Всего курсов: {stats['total_courses']}
+            - Всего подписок: {stats['total_subscriptions']}
+            - Новых подписок за неделю: {stats['new_subscriptions_week']}
+            """
 
             send_mail(
-                subject=f'Еженедельный отчет активности OnlineEdu - {now.strftime("%Y-%m-%d")}',
-                message=render_to_string('emails/activity_report.txt', email_context),
-                html_message=render_to_string('emails/activity_report.html', email_context),
+                subject=subject,
+                message=message,
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[admin.email],
                 fail_silently=True,

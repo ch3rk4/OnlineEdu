@@ -369,35 +369,27 @@ class LessonListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         """Автоматически устанавливаем текущего пользователя как владельца урока"""
-        serializer.save(owner=self.request.user)
+        lesson = serializer.save(owner=self.request.user)
 
-    def perform_create(self, serializer):
-    """
-    Переопределяем создание урока для уведомлений о новом контенте
-    """
-    # Стандартное создание урока
-    lesson = serializer.save(owner=self.request.user)
+        course = lesson.course
+        can_notify, reason = course.can_send_notification()
 
-    # Уведомляем подписчиков о новом уроке
-    course = lesson.course
-    can_notify, reason = course.can_send_notification()
+        if can_notify:
+            try:
+                process_lesson_update_notification.delay(
+                    lesson_id=lesson.id,
+                    update_type='new_lesson'
+                )
 
-    if can_notify:
-        try:
-            process_lesson_update_notification.delay(
-                lesson_id=lesson.id,
-                update_type='new_lesson'
-            )
+                logger.info(
+                    f"Запущена задача уведомления о новом уроке {lesson.title} "
+                    f"в курсе {course.title}"
+                )
 
-            logger.info(
-                f"Запущена задача уведомления о новом уроке {lesson.title} "
-                f"в курсе {course.title}"
-            )
-
-        except Exception as e:
-            logger.error(f"Ошибка запуска уведомления о новом уроке {lesson.id}: {e}")
-    else:
-        logger.info(f"Уведомление о новом уроке {lesson.title} пропущено: {reason}")
+            except Exception as e:
+                logger.error(f"Ошибка запуска уведомления о новом уроке {lesson.id}: {e}")
+        else:
+            logger.info(f"Уведомление о новом уроке {lesson.title} пропущено: {reason}")
 
 
 @extend_schema_view(

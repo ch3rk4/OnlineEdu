@@ -371,7 +371,6 @@ class LessonListCreateView(generics.ListCreateAPIView):
         """Автоматически устанавливаем текущего пользователя как владельца урока"""
         lesson = serializer.save(owner=self.request.user)
 
-        # Уведомляем подписчиков о новом уроке
         course = lesson.course
         can_notify, reason = course.can_send_notification()
 

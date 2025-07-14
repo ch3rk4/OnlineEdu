@@ -1,0 +1,273 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ===============================================
+  # Тестирование
+  # ===============================================
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_onlineedu
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.13'
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: latest
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+
+    - name: Load cached venv
+      id: cached-poetry-dependencies
+      uses: actions/cache@v3
+      with:
+        path: .venv
+        key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+
+    - name: Install dependencies
+      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      run: poetry install --no-interaction --no-ansi
+
+    - name: Create test environment file
+      run: |
+        cat << EOF > .env
+        SECRET_KEY=test-secret-key-for-github-actions
+        DEBUG=True
+        DB_NAME=test_onlineedu
+        DB_USER=postgres
+        DB_PASSWORD=postgres
+        DB_HOST=localhost
+        DB_PORT=5432
+        REDIS_HOST=localhost
+        REDIS_PORT=6379
+        REDIS_DB=0
+        CELERY_BROKER_URL=redis://localhost:6379/0
+        CELERY_RESULT_BACKEND=redis://localhost:6379/0
+        EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
+        STRIPE_PUBLISHABLE_KEY=pk_test_fake_key
+        STRIPE_SECRET_KEY=sk_test_fake_key
+        STRIPE_WEBHOOK_SECRET=whsec_fake_secret
+        FRONTEND_URL=http://localhost:3000
+        EOF
+
+    - name: Run migrations
+      run: |
+        poetry run python manage.py migrate
+        poetry run python manage.py create_groups
+
+    - name: Run tests
+      run: |
+        poetry run python manage.py test
+
+    - name: Run linting
+      run: |
+        poetry run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        poetry run flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    - name: Check code formatting
+      run: |
+        poetry run black --check .
+
+  # ===============================================
+  # Сборка Docker образа
+  # ===============================================
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image: ${{ steps.image.outputs.image }}
+      digest: ${{ steps.build.outputs.digest }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push Docker image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Output image
+      id: image
+      run: |
+        echo "image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_OUTPUT
+
+  # ===============================================
+  # Деплой на сервер
+  # ===============================================
+  deploy:
+    needs: [test, build]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    environment:
+      name: production
+      url: ${{ secrets.PRODUCTION_URL }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy to server
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        port: ${{ secrets.SERVER_PORT || 22 }}
+        script: |
+          # Переходим в директорию проекта
+          cd /opt/onlineedu
+          
+          # Создаем backup базы данных
+          echo "Creating database backup..."
+          docker-compose exec -T db pg_dump -U postgres onlineedu > backup_$(date +%Y%m%d_%H%M%S).sql
+          
+          # Логинимся в GitHub Container Registry
+          echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          
+          # Обновляем код
+          git fetch origin
+          git reset --hard origin/main
+          
+          # Обновляем образы
+          docker-compose pull
+          
+          # Пересобираем и перезапускаем сервисы
+          docker-compose down
+          docker-compose up -d --build
+          
+          # Ждем запуска приложения
+          echo "Waiting for application to start..."
+          sleep 30
+          
+          # Выполняем миграции
+          docker-compose exec -T web python manage.py migrate
+          docker-compose exec -T web python manage.py collectstatic --noinput
+          
+          # Проверяем здоровье приложения
+          if docker-compose exec -T web python manage.py check; then
+            echo "✅ Deployment successful!"
+          else
+            echo "❌ Health check failed!"
+            exit 1
+          fi
+          
+          # Очищаем старые образы
+          docker image prune -f
+
+    - name: Health Check
+      run: |
+        # Ждем немного и проверяем доступность сайта
+        sleep 10
+        curl -f ${{ secrets.PRODUCTION_URL }}/health/ || exit 1
+
+    - name: Notify on success
+      if: success()
+      run: |
+        echo "🚀 Deployment to production completed successfully!"
+        echo "🌐 Application is available at: ${{ secrets.PRODUCTION_URL }}"
+
+    - name: Notify on failure
+      if: failure()
+      run: |
+        echo "❌ Deployment failed! Please check the logs."
+
+  # ===============================================
+  # Очистка (опционально)
+  # ===============================================
+  cleanup:
+    needs: [deploy]
+    runs-on: ubuntu-latest
+    if: always() && github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Clean up old images
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        port: ${{ secrets.SERVER_PORT || 22 }}
+        script: |
+          # Удаляем неиспользуемые образы (старше 24 часов)
+          docker image prune -a -f --filter "until=24h"
+          
+          # Удаляем неиспользуемые volume'ы
+          docker volume prune -f
+          
+          echo "🧹 Cleanup completed!"

@@ -1,0 +1,105 @@
+name: Release Deployment
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to deploy'
+        required: true
+        default: 'latest'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ===============================================
+  # Деплой релиза
+  # ===============================================
+  deploy-release:
+    runs-on: ubuntu-latest
+
+    environment:
+      name: production
+      url: ${{ secrets.PRODUCTION_URL }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.release.tag_name || inputs.version }}
+
+    - name: Set version
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" = "release" ]; then
+          echo "version=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+        else
+          echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Deploy release to production
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        port: ${{ secrets.SERVER_PORT || 22 }}
+        script: |
+          # Переходим в директорию проекта
+          cd /opt/onlineedu
+          
+          # Создаем backup базы данных с версией
+          echo "Creating database backup for release ${{ steps.version.outputs.version }}..."
+          docker-compose exec -T db pg_dump -U postgres onlineedu > backup_release_${{ steps.version.outputs.version }}_$(date +%Y%m%d_%H%M%S).sql
+          
+          # Логинимся в registry
+          echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          
+          # Переключаемся на тег релиза
+          git fetch --tags
+          git checkout ${{ steps.version.outputs.version }}
+          
+          # Обновляем docker-compose.yml для использования конкретной версии
+          sed -i 's|build: \.|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}|g' docker-compose.yaml
+          
+          # Останавливаем текущие контейнеры
+          docker-compose down
+          
+          # Запускаем с новой версией
+          docker-compose up -d
+          
+          # Ждем запуска
+          echo "Waiting for application to start..."
+          sleep 45
+          
+          # Выполняем миграции
+          docker-compose exec -T web python manage.py migrate
+          docker-compose exec -T web python manage.py collectstatic --noinput
+          
+          # Проверяем здоровье
+          if docker-compose exec -T web python manage.py check; then
+            echo "✅ Release ${{ steps.version.outputs.version }} deployed successfully!"
+          else
+            echo "❌ Health check failed for release ${{ steps.version.outputs.version }}!"
+            
+            # Rollback к latest если не получилось
+            echo "Rolling back to latest version..."
+            git checkout main
+            sed -i 's|image: .*|build: .|g' docker-compose.yaml
+            docker-compose up -d
+            exit 1
+          fi
+
+    - name: Create deployment status
+      if: success()
+      run: |
+        echo "🎉 Release ${{ steps.version.outputs.version }} has been successfully deployed to production!"
+        echo "🌐 Application is available at: ${{ secrets.PRODUCTION_URL }}"
+
+    - name: Rollback notification
+      if: failure()
+      run: |
+        echo "❌ Release deployment failed! System was rolled back to previous version."

@@ -4,10 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7e79b749-a63e-4609-b1e0-2031ec674542" name="Changes" comment="fixes">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lms/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/lms/views.py" afterDir="false" />
-    </list>
+    <list default="true" id="7e79b749-a63e-4609-b1e0-2031ec674542" name="Changes" comment="fixes" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -24,7 +21,7 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="HW6" />
+        <entry key="$PROJECT_DIR$" value="HW6.1" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -41,6 +38,9 @@
     &quot;accountId&quot;: &quot;6f96d88e-1535-4788-810a-49b80da077ca&quot;
   }
 }</component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$USER_HOME$/AppData/Local/pypoetry/Cache/virtualenvs/onlineedu-tIF5d1HF-py3.13/Lib/site-packages/kombu/utils/objects.py" root0="SKIP_INSPECTION" />
+  </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 8
 }</component>
@@ -55,7 +55,7 @@
     &quot;ASKED_MARK_IGNORED_FILES_AS_EXCLUDED&quot;: &quot;true&quot;,
     &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;HW6.1&quot;
+    &quot;git-widget-placeholder&quot;: &quot;HW7&quot;
   }
 }</component>
   <component name="SharedIndexes">
@@ -418,14 +418,58 @@
       <option name="project" value="LOCAL" />
       <updated>1752395152240</updated>
     </task>
-    <option name="localTasksCounter" value="44" />
+    <task id="LOCAL-00044" summary="fixes">
+      <option name="closed" value="true" />
+      <created>1752495514360</created>
+      <option name="number" value="00044" />
+      <option name="presentableId" value="LOCAL-00044" />
+      <option name="project" value="LOCAL" />
+      <updated>1752495514360</updated>
+    </task>
+    <task id="LOCAL-00045" summary="create dockerfile">
+      <option name="closed" value="true" />
+      <created>1752500085643</created>
+      <option name="number" value="00045" />
+      <option name="presentableId" value="LOCAL-00045" />
+      <option name="project" value="LOCAL" />
+      <updated>1752500085643</updated>
+    </task>
+    <task id="LOCAL-00046" summary="create docker-entrypoint.sh">
+      <option name="closed" value="true" />
+      <created>1752500167482</created>
+      <option name="number" value="00046" />
+      <option name="presentableId" value="LOCAL-00046" />
+      <option name="project" value="LOCAL" />
+      <updated>1752500167482</updated>
+    </task>
+    <task id="LOCAL-00047" summary="create nginx">
+      <option name="closed" value="true" />
+      <created>1752500648323</created>
+      <option name="number" value="00047" />
+      <option name="presentableId" value="LOCAL-00047" />
+      <option name="project" value="LOCAL" />
+      <updated>1752500648323</updated>
+    </task>
+    <task id="LOCAL-00048" summary="create settings_production">
+      <option name="closed" value="true" />
+      <created>1752501154762</created>
+      <option name="number" value="00048" />
+      <option name="presentableId" value="LOCAL-00048" />
+      <option name="project" value="LOCAL" />
+      <updated>1752501154764</updated>
+    </task>
+    <task id="LOCAL-00049" summary="fixes">
+      <option name="closed" value="true" />
+      <created>1752501314761</created>
+      <option name="number" value="00049" />
+      <option name="presentableId" value="LOCAL-00049" />
+      <option name="project" value="LOCAL" />
+      <updated>1752501314761</updated>
+    </task>
+    <option name="localTasksCounter" value="50" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="module with Payment" />
-    <MESSAGE value="lesson output field" />
-    <MESSAGE value="create init_data" />
-    <MESSAGE value="new funcs JWT and CRUD" />
     <MESSAGE value="create validators for youtube" />
     <MESSAGE value="refresh lms/serializers" />
     <MESSAGE value="refresh lms/models and views" />
@@ -446,6 +490,10 @@
     <MESSAGE value="refresh models for messages" />
     <MESSAGE value="email masks" />
     <MESSAGE value="create commands" />
+    <MESSAGE value="create dockerfile" />
+    <MESSAGE value="create docker-entrypoint.sh" />
+    <MESSAGE value="create nginx" />
+    <MESSAGE value="create settings_production" />
     <MESSAGE value="fixes" />
     <option name="LAST_COMMIT_MESSAGE" value="fixes" />
   </component>

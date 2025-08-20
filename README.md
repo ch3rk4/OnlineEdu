@@ -136,3 +136,9 @@ docker-compose exec web python manage.py migrate
 - `PRODUCTION_URL` - URL продакшен сайта
 
 Push в `main` ветку автоматически запустит деплой на сервер.
+
+🌐 **Демо-версия доступна по адресу:** 
+## 🚀 [https://ch3rk4.pythonanywhere.com](https://ch3rk4.pythonanywhere.com)
+
+📚 **API документация:** 
+## 📖 [https://ch3rk4.pythonanywhere.com/api/docs/](https://ch3rk4.pythonanywhere.com/api/docs/)
